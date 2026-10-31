@@ -1,0 +1,244 @@
+name: SentryTower security audit
+description: Audit the checked-out repository with SentryTower and upload the findings to GitHub code scanning (SARIF).
+author: SentryTower contributors
+branding:
+  icon: shield
+  color: blue
+
+# The action runs the published image of its version (see the input image) with Docker on a Linux runner. The
+# runner needs Docker and Python 3.9 or later; GitHub-hosted Linux runners have both.
+
+inputs:
+  api-key:
+    description: The key of the model provider (OpenRouter by default). Pass it from a secret, for example secrets.OPENROUTER_API_KEY. It reaches the container only in its environment, never on a command line.
+    required: true
+  path:
+    description: The folder to audit, relative to the workspace.
+    default: "."
+  model:
+    description: One model for every role (default deepseek/deepseek-v4.1-flash-1017).
+    default: ""
+  base-url:
+    description: An OpenAI-compatible endpoint (default https://openrouter.ai/api/v1).
+    default: ""
+  config:
+    description: A TOML configuration file, relative to the workspace (multi-LLM roles, policies, budgets). The file comes from the checked-out code; the action refuses it on pull_request_target.
+    default: ""
+  max-tokens:
+    description: The highest token ceiling of the run (default what the cost cap buys at the model prices; 20000000 for models without prices).
+    default: ""
+  wall-clock:
+    description: The wall clock of the run in seconds (default 14400). Keep it below the timeout of the job.
+    default: ""
+  max-cost-usd:
+    description: The cost cap of the run in US dollars. Empty passes no value, so SentryTower applies its default cap of 2 when each model of the run has prices; 0 means no cap. A cap above 2 buys a deeper audit (preview, more checks; effect on findings not yet measured). A cap for a model without prices is a usage error (exit code 2).
+    default: ""
+  depth:
+    description: "The depth of the audit: quick, standard, deep or max (a cost cap of $0.50, $2, $10 or $50). max-cost-usd wins when both are set. A cap above $2 is a preview: more checks; effect on findings not yet measured."
+    default: ""
+  fail-on:
+    description: Fail the step when a finding has this severity or a higher one (critical, high, medium or low). Empty never fails on findings. A failed or incomplete run (exit code 4), a usage error (2) and an environment problem (3) always fail the step.
+    default: ""
+  upload-sarif:
+    description: >-
+      Upload findings.sarif to GitHub code scanning (needs the permission security-events write): auto, true or false.
+      GitHub shows the alert list of a repository only to people with write access, but it shows the alerts of a pull
+      request, as annotations and check results, to everyone who can read the repository. So auto uploads on a private
+      or internal repository; on a public repository it uploads only for a run of the default branch that is not a pull
+      request run (or for each run when public-findings is true). true always uploads; false never does.
+    default: auto
+  sarif-category:
+    description: The code-scanning category of the upload.
+    default: sentrytower
+  upload-artifact:
+    description: Upload the output folder (findings.json, findings.sarif, report.md, report.html, run.json) as a workflow artifact. Anyone who can read a public repository can download its artifacts, so on a public repository the artifact holds run.json only (the record of the run, without findings) unless public-findings is true.
+    default: "true"
+  artifact-name:
+    description: The name of the workflow artifact (each use of the action in one workflow run needs its own name).
+    default: sentrytower-results
+  public-findings:
+    description: On a public repository, also show the titles, files and lines of the findings in the job summary, put the findings in the workflow artifact, and upload the SARIF file for pull request runs. Every reader of the repository can then read them. By default a public repository gets counts only. Private and internal repositories always get the findings.
+    default: "false"
+  image:
+    description: The SentryTower image to run. Empty pulls the published image of this version of the action, ghcr.io/national-compute/sentrytower:0.1.0. Give another image to override it, for example a mirror in your registry or a digest pin (ghcr.io/national-compute/sentrytower:0.1.0@sha256:...). The action does not build an image.
+    default: ""
+  docker-args:
+    description: Extra arguments of docker run (for example a network for a local endpoint). The words are split at spaces.
+    default: ""
+
+outputs:
+  findings:
+    description: The path of findings.json.
+    value: ${{ steps.report.outputs.findings }}
+  sarif:
+    description: The path of findings.sarif.
+    value: ${{ steps.report.outputs.sarif }}
+  report:
+    description: The path of report.md.
+    value: ${{ steps.report.outputs.report }}
+  report-html:
+    description: The path of report.html (the report as a web page).
+    value: ${{ steps.report.outputs.report-html }}
+  count:
+    description: The number of findings.
+    value: ${{ steps.report.outputs.count }}
+  route:
+    description: The engine of the run (funnel or agent).
+    value: ${{ steps.report.outputs.route }}
+  status:
+    description: The status of the run (complete, incomplete, failed or interrupted).
+    value: ${{ steps.report.outputs.status }}
+  exit-code:
+    description: The exit code of sentrytower audit.
+    value: ${{ steps.audit.outputs.exit-code }}
+
+runs:
+  using: composite
+  steps:
+    - name: Check the visibility of the repository
+      id: context
+      shell: bash
+      env:
+        INPUT_UPLOAD_SARIF: ${{ inputs.upload-sarif }}
+        INPUT_UPLOAD_ARTIFACT: ${{ inputs.upload-artifact }}
+        INPUT_PUBLIC_FINDINGS: ${{ inputs.public-findings }}
+        # The token of the job reads the metadata of the repository when the event does not give its visibility.
+        INPUT_TOKEN: ${{ github.token }}
+        ACTION_PATH: ${{ github.action_path }}
+      run: |
+        if ! command -v python3 >/dev/null 2>&1; then
+          echo "::error title=SentryTower::the action needs Python 3.9 or later (python3) on the runner"
+          exit 3
+        fi
+        python3 "${ACTION_PATH}/scripts/github_action.py" context
+
+    - name: Pull the SentryTower image
+      id: image
+      shell: bash
+      env:
+        INPUT_IMAGE: ${{ inputs.image }}
+        # The published image of this version; tests/test_release.py checks that it names the package version.
+        DEFAULT_IMAGE: ghcr.io/national-compute/sentrytower:0.1.0
+      run: |
+        set -euo pipefail
+        image="${INPUT_IMAGE:-${DEFAULT_IMAGE}}"
+        if ! docker image inspect "${image}" >/dev/null 2>&1 && ! docker pull --quiet "${image}" >/dev/null; then
+          echo "::error title=SentryTower::cannot pull the image ${image}: check its name and the access to its registry"
+          exit 3
+        fi
+        # The digest of the image in the log: pin it with the input image for a run that cannot change.
+        echo "SentryTower image: $(docker image inspect --format '{{if .RepoDigests}}{{index .RepoDigests 0}}{{else}}{{.Id}}{{end}}' "${image}")"
+        echo "name=${image}" >> "$GITHUB_OUTPUT"
+
+    - name: Run the audit
+      id: audit
+      shell: bash
+      env:
+        SENTRYTOWER_API_KEY: ${{ inputs.api-key }}
+        IMAGE: ${{ steps.image.outputs.name }}
+        AUDIT_PATH: ${{ inputs.path }}
+        MODEL: ${{ inputs.model }}
+        BASE_URL: ${{ inputs.base-url }}
+        CONFIG: ${{ inputs.config }}
+        MAX_TOKENS: ${{ inputs.max-tokens }}
+        WALL_CLOCK: ${{ inputs.wall-clock }}
+        MAX_COST: ${{ inputs.max-cost-usd }}
+        DEPTH: ${{ inputs.depth }}
+        FAIL_ON: ${{ inputs.fail-on }}
+        DOCKER_ARGS: ${{ inputs.docker-args }}
+        SARIF_CATEGORY: ${{ inputs.sarif-category }}
+        EVENT_NAME: ${{ github.event_name }}
+      run: |
+        set -uo pipefail
+        out="${RUNNER_TEMP}/sentrytower"
+        rm -rf "${out}" && mkdir -p "${out}"
+        echo "folder=${out}" >> "$GITHUB_OUTPUT"
+        refuse() {
+          echo "::error title=SentryTower::$1"
+          echo "exit-code=2" >> "$GITHUB_OUTPUT"
+          exit 0
+        }
+        workspace="$(cd "${GITHUB_WORKSPACE}" && pwd -P)"
+        repo="$(cd "${GITHUB_WORKSPACE}/${AUDIT_PATH}" 2>/dev/null && pwd -P)" || refuse "the path input is not a folder: ${AUDIT_PATH}"
+        case "${repo}/" in
+          "${workspace}/"*) ;;
+          *) refuse "the path input must be a folder of the workspace" ;;
+        esac
+        args=(audit /workspace/repo --out /workspace/out --sarif-category "${SARIF_CATEGORY:-sentrytower}")
+        # Code scanning reads each SARIF path from the root of the repository: an audit of a subfolder
+        # puts the subfolder in front of each path.
+        case "${repo}/" in
+          "${workspace}/"?*) args+=(--sarif-path-prefix "${repo#"${workspace}/"}") ;;
+        esac
+        [ -n "${MODEL}" ] && args+=(--model "${MODEL}")
+        [ -n "${BASE_URL}" ] && args+=(--base-url "${BASE_URL}")
+        [ -n "${MAX_TOKENS}" ] && args+=(--max-tokens "${MAX_TOKENS}")
+        [ -n "${WALL_CLOCK}" ] && args+=(--wall-clock "${WALL_CLOCK}")
+        # No value by default: the command line applies its default cap (2 US dollars when each model has prices).
+        [ -n "${MAX_COST}" ] && args+=(--max-cost-usd "${MAX_COST}")
+        [ -n "${DEPTH}" ] && args+=(--depth "${DEPTH}")
+        [ -n "${FAIL_ON}" ] && args+=(--fail-on "${FAIL_ON}")
+        mounts=(-v "${repo}:/workspace/repo:ro" -v "${out}:/workspace/out")
+        if [ -n "${CONFIG}" ]; then
+          # The checked-out code may come from the pull request: its configuration could send the key elsewhere.
+          [ "${EVENT_NAME}" = "pull_request_target" ] \
+            && refuse "the config input reads a file of the checked-out code; on pull_request_target, use the inputs instead"
+          # The whole path is resolved, its last part too: a link may not lead out of the workspace.
+          config="$(python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "${GITHUB_WORKSPACE}/${CONFIG}")"
+          case "${config}" in
+            "${workspace}/"*) [ -f "${config}" ] || refuse "the config input is not a file: ${CONFIG}" ;;
+            *) refuse "the config input must be a file of the workspace" ;;
+          esac
+          mounts+=(-v "${config}:/workspace/sentrytower.toml:ro")
+          args+=(--config /workspace/sentrytower.toml)
+        fi
+        # The repository is read only; the run state lives in a private tmpfs; the key comes
+        # from the environment of this step (never from the command line).
+        # GitHub runs this script with "bash -e": keep the exit code of the audit for the last step,
+        # so that the report, the SARIF upload and the artifact also run after a non-zero exit.
+        code=0
+        # shellcheck disable=SC2086
+        docker run --rm --user "$(id -u):$(id -g)" --read-only \
+          --tmpfs "/home/dev:rw,nosuid,nodev,size=4g,uid=$(id -u),gid=$(id -g)" --tmpfs /tmp:rw,nosuid,nodev,size=1g \
+          --cap-drop ALL --security-opt no-new-privileges \
+          -e SENTRYTOWER_API_KEY -e HOME=/home/dev \
+          "${mounts[@]}" ${DOCKER_ARGS} "${IMAGE}" "${args[@]}" || code=$?
+        echo "exit-code=${code}" >> "$GITHUB_OUTPUT"
+        exit 0
+
+    - name: Report the result
+      id: report
+      if: ${{ always() && steps.audit.outputs.folder != '' }}
+      shell: bash
+      env:
+        AUDIT_OUT: ${{ steps.audit.outputs.folder }}
+        AUDIT_EXIT_CODE: ${{ steps.audit.outputs.exit-code }}
+        AUDIT_FAIL_ON: ${{ inputs.fail-on }}
+        AUDIT_DETAILS: ${{ steps.context.outputs.details }}
+        AUDIT_UPLOAD_SARIF: ${{ steps.context.outputs.upload-sarif }}
+        ACTION_PATH: ${{ github.action_path }}
+      run: python3 "${ACTION_PATH}/scripts/github_action.py" report
+
+    - name: Upload SARIF to code scanning
+      # A complete run only: code scanning closes each open alert that a new upload of the category does not hold, so
+      # the empty SARIF file of a refused key or a stopped run would close the alerts as fixed.
+      if: ${{ always() && steps.context.outputs.upload-sarif == 'true' && steps.report.outputs.sarif != '' && steps.report.outputs.status == 'complete' }}
+      uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+      with:
+        sarif_file: ${{ steps.report.outputs.sarif }}
+        category: ${{ inputs.sarif-category }}
+
+    - name: Upload the audit files
+      if: ${{ always() && steps.context.outputs.artifact != 'none' && steps.audit.outputs.folder != '' }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: ${{ inputs.artifact-name }}
+        # A public repository without public-findings gets the record of the run only: no findings.
+        path: ${{ steps.context.outputs.artifact == 'all' && steps.audit.outputs.folder || format('{0}/run.json', steps.audit.outputs.folder) }}
+        if-no-files-found: ignore
+
+    - name: Exit with the code of the audit
+      shell: bash
+      env:
+        CODE: ${{ steps.audit.outputs.exit-code }}
+      run: exit "${CODE:-4}"

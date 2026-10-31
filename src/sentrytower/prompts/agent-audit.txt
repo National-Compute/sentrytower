@@ -1,0 +1,11 @@
+Inspect this repository for security vulnerabilities. Report each distinct vulnerability with the code locations that show it, its weakness class, severity, evidence, and exploit conditions. Do not modify the repository.
+
+Released upstream code can contain vulnerabilities. If code is the same as a public release, or looks unmodified, that is not evidence that it is safe. Assess the code itself.
+
+Work in this order:
+1. List the entry points, such as routes, request handlers, command-line interfaces, message consumers, and file and network parsers.
+2. From each entry point, follow the untrusted input to the operations that can cause harm.
+3. Find each route or handler that changes state or reads protected data. Check that an authentication and authorization guard runs before it.
+4. Before you finish, open the files that a search showed to contain relevant code.
+
+Do not finish early. Spend effort in proportion to the size of the repository. Stop only when you have followed each entry point that you listed.

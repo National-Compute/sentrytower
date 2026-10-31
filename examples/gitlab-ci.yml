@@ -1,0 +1,28 @@
+# .gitlab-ci.yml: audit the repository with the SentryTower image and keep the
+# outputs (findings.json, findings.sarif, report.md, report.html, run.json) as job
+# artifacts. A failed or incomplete run (exit code 4) fails the job.
+# GitLab reads security reports in its own format; keep the SARIF file for
+# a SARIF viewer or convert it before an upload to the security dashboard.
+#
+# Set OPENROUTER_API_KEY as a masked and protected CI/CD variable.
+
+sentrytower:
+  stage: test
+  image:
+    name: ghcr.io/national-compute/sentrytower:0.1.0   # the published image (or your build of docker/Dockerfile)
+    entrypoint: [""]
+  variables:
+    SENTRYTOWER_API_KEY: $OPENROUTER_API_KEY
+    SENTRYTOWER_STATE_DIR: /tmp/sentrytower-state
+  timeout: 4h 30m
+  script:
+    - sentrytower doctor --offline
+    - sentrytower audit "$CI_PROJECT_DIR" --out "$CI_PROJECT_DIR/sentrytower-results"
+  artifacts:
+    when: always
+    paths:
+      - sentrytower-results/
+    expire_in: 30 days
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_PIPELINE_SOURCE == "schedule"

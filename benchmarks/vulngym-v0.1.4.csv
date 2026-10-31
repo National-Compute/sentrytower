@@ -1,0 +1,4 @@
+harness,detection_pct,note
+funnel engine,8.9,the hybrid as a whole was not run on VulnGym
+single-agent engine,12.1,the hybrid as a whole was not run on VulnGym
+Piolium,4.5,

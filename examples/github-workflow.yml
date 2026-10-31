@@ -1,0 +1,36 @@
+# .github/workflows/sentrytower.yml: audit the repository on each pull request and each week,
+# and show the findings in GitHub code scanning.
+name: SentryTower
+
+on:
+  pull_request:
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 270          # the wall clock of the audit (four hours) and a margin
+    permissions:
+      contents: read
+      security-events: write      # upload of the SARIF file to code scanning
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: SentryTower
+        uses: National-Compute/sentrytower@v0.1.0
+        with:
+          api-key: ${{ secrets.OPENROUTER_API_KEY }}
+          # fail-on: high            # fail the job on a high or critical finding
+          # max-cost-usd: "0"        # the cost cap of a run in US dollars (default 2; "0": no cap)
+          # depth: deep              # a cap of 10 US dollars: more checks (a preview)
+          # config: .github/sentrytower.toml
+          # On a public repository, the job summary and the artifact show counts only, and a pull
+          # request run uploads no SARIF file. The weekly run of the default branch uploads its
+          # findings to code scanning, which shows them to people with write access only.

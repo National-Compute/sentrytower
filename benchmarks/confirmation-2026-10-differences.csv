@@ -1,0 +1,3 @@
+comparison,metric,difference_pp,ci90_low,ci90_high
+SentryTower hybrid minus Piolium,detection,17.9,10.4,25.4
+SentryTower hybrid minus Piolium,false_alarms,1.7,-4.5,8.2

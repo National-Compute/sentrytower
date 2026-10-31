@@ -1,0 +1,48 @@
+# SentryTower with the repository read only and network access only to the model endpoint.
+#
+#   export SENTRYTOWER_API_KEY=...          # the key of the model provider (never written to a file)
+#   mkdir -p sentrytower-results            # the outputs; keep them out of the audited repository
+#   REPO=/path/to/repository HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose run --rm sentrytower
+#
+# HOST_UID and HOST_GID run the container as your user, so that it can write
+# the output folder (without them: the user 1000 of the image).
+#
+# The audit container is on an internal network without a route to the
+# internet. Its only way out is the egress proxy, which allows TLS
+# connections to openrouter.ai and refuses everything else.
+services:
+  sentrytower:
+    image: ghcr.io/national-compute/sentrytower:0.1.0   # the published image; "docker compose build" builds it from docker/Dockerfile
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    command: ["audit", "/workspace/repo", "--out", "/workspace/out"]
+    environment:
+      SENTRYTOWER_API_KEY: ${SENTRYTOWER_API_KEY:?set SENTRYTOWER_API_KEY}
+      HTTPS_PROXY: http://egress:3128
+      NO_PROXY: 127.0.0.1,localhost
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    volumes:
+      - ${REPO:-.}:/workspace/repo:ro
+      - ./sentrytower-results:/workspace/out
+    read_only: true
+    tmpfs:
+      - /home/dev:size=4g,uid=${HOST_UID:-1000},gid=${HOST_GID:-1000}
+      - /tmp:size=1g
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 512
+    mem_limit: 4g
+    networks: [internal]
+    depends_on: [egress]
+
+  egress:
+    image: ubuntu/squid:6.6-24.04_edge@sha256:8a3baed477e2c282ab8aa5edad442f69873246964f225c5c2ae8364b6610963c
+    volumes:
+      - ./docker/egress/squid.conf:/etc/squid/squid.conf:ro
+    networks: [internal, outside]
+
+networks:
+  internal:
+    internal: true
+  outside: {}

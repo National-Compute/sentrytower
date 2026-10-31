@@ -1,0 +1,62 @@
+SentryTower
+Copyright 2026 The SentryTower Authors
+
+This product is licensed under the Apache License, Version 2.0 (LICENSE-APACHE)
+or the MIT License (LICENSE-MIT), at your option.
+
+-------------------------------------------------------------------------------
+Third-party software
+-------------------------------------------------------------------------------
+
+The Python package of SentryTower uses the Python standard library only.
+The container image (docker/Dockerfile) and the agent engine use the
+following third-party software. It is installed from its official
+distribution at build time; this repository does not copy its source,
+except where noted.
+
+Pi coding agent (@earendil-works/pi-coding-agent) 0.84.1
+  License: MIT
+  Source: https://www.npmjs.com/package/@earendil-works/pi-coding-agent
+  The agent engine runs the Pi CLI. src/sentrytower/agent/numbered_read.ts
+  is a SentryTower extension for Pi that uses its extension API.
+  The image installs Pi and its 144 npm dependencies from
+  docker/pi/package-lock.json (licenses of the dependencies: MIT 70,
+  Apache-2.0 47, BSD-3-Clause 13, ISC 8, BlueOak-1.0.0 5, 0BSD 1). Each
+  package keeps its license file in the image under /opt/pi-install.
+
+ripgrep 15.2.0
+  License: MIT or the Unlicense (dual license)
+  Copyright (c) Andrew Gallant
+  Source: https://github.com/BurntSushi/ripgrep
+
+fd 10.5.0
+  License: MIT or Apache-2.0 (dual license)
+  Copyright (c) 2017-present The fd developers
+  Source: https://github.com/sharkdp/fd
+
+Node.js 24.19.0
+  License: MIT (with the licenses of its bundled components)
+  Source: https://nodejs.org
+
+Python 3.12.15
+  License: Python Software Foundation License Version 2
+  Source: https://www.python.org
+
+Debian packages of the base image (libstdc++6, tini, ca-certificates and
+their dependencies) keep their own licenses under /usr/share/doc in the image.
+
+Squid (docker-compose.yml example only; a separate image, not part of
+SentryTower)
+  License: GPL-2.0-or-later
+  Source: https://www.squid-cache.org
+
+OASIS SARIF Version 2.1.0 JSON Schema (tests/data/sarif-schema-2.1.0.json,
+used by the tests only)
+  Copyright (c) OASIS Open 2020. All Rights Reserved.
+  Source: https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json
+  Distributed under the OASIS IPR Policy (https://www.oasis-open.org/policies-guidelines/ipr/).
+
+CWE names in src/sentrytower/sarif.py
+  Common Weakness Enumeration (CWE) is a trademark of The MITRE Corporation.
+  CWE content: Copyright (c) The MITRE Corporation, used under the CWE Terms of Use
+  (https://cwe.mitre.org/about/termsofuse.html).

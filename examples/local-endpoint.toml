@@ -1,0 +1,31 @@
+# SentryTower: a local OpenAI-compatible endpoint (vLLM, Ollama, LM Studio, llama.cpp server).
+#
+#   vllm serve Qwen/Qwen3-Coder-30B-A3B-Instruct --port 8000          # or: ollama serve
+#   sentrytower audit ./repo --config examples/local-endpoint.toml
+#
+# The gateway sends each request to base_url + "/chat/completions". A local
+# endpoint usually needs no key, no OpenRouter provider route and no
+# reasoning object. Its detection rate depends on the local model. A model
+# without prices runs without a cost cap; a cap for it (--max-cost-usd,
+# --depth) is a usage error (exit code 2).
+
+[models]
+default = "Qwen/Qwen3-Coder-30B-A3B-Instruct"   # Ollama: for example "qwen3-coder:30b"
+
+[provider]
+base_url = "http://127.0.0.1:8000/v1"           # Ollama: "http://127.0.0.1:11434/v1"
+require_api_key = false                          # send no authorization header without a key
+api_key_env = ["LOCAL_LLM_API_KEY"]              # used only when it is set
+max_parallel_requests = 4                         # what the local server can serve at the same time
+
+[policies."Qwen/Qwen3-Coder-30B-A3B-Instruct"]
+reasoning_effort = "none"            # send no reasoning object
+token_field = "max_tokens"           # an endpoint that does not know max_completion_tokens
+max_completion_tokens = 16_384
+context_window = 131_072
+attempt_timeout_seconds = 900        # a local model can be slow
+max_retries = 2
+
+[budget]
+max_tokens = 20_000_000    # a local model has no price: no cost cap, and the token ceiling is the budget
+wall_clock_seconds = 14_400

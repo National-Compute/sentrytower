@@ -1,0 +1,3 @@
+This session has one focus: {{focus}}.
+
+Other sessions of this audit cover the other weakness classes. Spend your effort on this focus: find each place in the repository where it can occur, follow the untrusted data to it, and check the guards that must stop it. You can also report a vulnerability of another class when you find it on the way and can support it.

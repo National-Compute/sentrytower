@@ -1,0 +1,410 @@
+{
+  "schema_version": 1,
+  "description": "Aggregate results of the SentryTower 1.0.0 benchmarks. Aggregates only: no per-advisory data, no answer keys, no repository lists.",
+  "conditions": {
+    "model": "z-ai/glm-5.3-flash via OpenRouter, the same model for every harness and every role",
+    "budget_per_run": {
+      "tokens": 20000000,
+      "wall_clock_seconds": 14400
+    },
+    "sandbox": "the same offline sandbox for every harness",
+    "runs": "one run for each repository version",
+    "detection": "a finding whose location is within 10 lines of the true vulnerable operation; strict location matcher: spans of at most 31 lines, at most 3 locations for each finding, calibrated on development data so that no harness wins by chance matches",
+    "false_alarm": "a finding on the fixed lines of the fixed version",
+    "intervals": "90% paired cluster-bootstrap intervals over repositories"
+  },
+  "confirmation_test": {
+    "preregistered": "2026-10-20, before any data",
+    "advisories": {
+      "published": "2026-10-10 to 2026-10-20",
+      "count": 123,
+      "with_answer_keys": 117,
+      "repositories": 93
+    },
+    "versions": "each repository at its vulnerable and at its fixed version",
+    "answer_keys": "drafted by models of two model families, with a review of the flagged drafts",
+    "harnesses": [
+      {
+        "harness": "SentryTower hybrid",
+        "detection_pct": 29.1,
+        "detection_ci90": [
+          21.8,
+          36.5
+        ],
+        "false_alarm_pct": 11.1,
+        "mean_cost_usd_per_run": 0.3,
+        "chance_match_pct": 8.8
+      },
+      {
+        "harness": "Piolium",
+        "detection_pct": 11.1,
+        "detection_ci90": [
+          6.6,
+          16.2
+        ],
+        "false_alarm_pct": 9.4,
+        "mean_cost_usd_per_run": 0.1,
+        "chance_match_pct": 5.5
+      },
+      {
+        "harness": "single-agent engine alone",
+        "detection_pct": 22.2,
+        "detection_ci90": [
+          15.3,
+          29.7
+        ],
+        "false_alarm_pct": 8.5,
+        "mean_cost_usd_per_run": 0.08,
+        "chance_match_pct": 6.1
+      }
+    ],
+    "differences": [
+      {
+        "comparison": "SentryTower hybrid minus Piolium",
+        "metric": "detection",
+        "difference_pp": 17.9,
+        "ci90": [
+          10.4,
+          25.4
+        ]
+      },
+      {
+        "comparison": "SentryTower hybrid minus Piolium",
+        "metric": "false_alarms",
+        "difference_pp": 1.7,
+        "ci90": [
+          -4.5,
+          8.2
+        ]
+      }
+    ],
+    "preregistered_conditions": {
+      "count": 3,
+      "passed": 3,
+      "passed_in_each_sensitivity_view": true
+    },
+    "sensitivity_views": [
+      {
+        "view": "standard matcher",
+        "hybrid_detection_pct": 33.3,
+        "piolium_detection_pct": 13.7
+      },
+      {
+        "view": "stricter answer key",
+        "hybrid_detection_pct": 24.6,
+        "piolium_detection_pct": 8.2
+      },
+      {
+        "view": "standard matcher and stricter answer key",
+        "hybrid_detection_pct": 26.2,
+        "piolium_detection_pct": 8.2
+      }
+    ],
+    "by_repository_size": [
+      {
+        "size": "under 1000 files",
+        "hybrid_minus_piolium_pp": 24.0,
+        "ci90": [
+          15.3,
+          32.5
+        ],
+        "significant": true
+      },
+      {
+        "size": "1000 to 9999 files",
+        "hybrid_minus_piolium_pp": 7.5,
+        "ci90": [
+          -5.7,
+          21.7
+        ],
+        "significant": false
+      }
+    ],
+    "chance_match_note": "Each chance-match rate is above the 5% target. The difference of 3.3 points between the hybrid and Piolium is far below the detection gap of 17.9 points."
+  },
+  "vulngym": {
+    "dataset": "Tencent VulnGym v0.1.4",
+    "advisories": 157,
+    "selection": "all human-verified advisories that the scorer supports",
+    "versions": "vulnerable versions only, so no false-alarm measure",
+    "preregistered": true,
+    "engines": [
+      {
+        "harness": "funnel engine",
+        "detection_pct": 8.9
+      },
+      {
+        "harness": "single-agent engine",
+        "detection_pct": 12.1
+      },
+      {
+        "harness": "Piolium",
+        "detection_pct": 4.5
+      }
+    ],
+    "differences": [
+      {
+        "comparison": "funnel engine minus Piolium",
+        "metric": "detection",
+        "difference_pp": 4.5,
+        "ci90": [
+          1.3,
+          16.4
+        ]
+      }
+    ],
+    "notes": [
+      "The hybrid as a whole was not run on VulnGym; each of its engines was.",
+      "One repository holds 94 of the 157 advisories."
+    ]
+  },
+  "limits": [
+    "The answer keys of the fresh advisory sets are drafted by models.",
+    "The comparison includes Piolium only; other open harnesses were not part of these runs.",
+    "One model (GLM 5.3 Flash).",
+    "Large repositories (10,000 files or more) remain hard for every harness.",
+    "Costs are at OpenRouter prices in October 2026."
+  ],
+  "open_harnesses": {
+    "test": "open harnesses, October 2026",
+    "registered": "2026-10-24, before any run of a rival",
+    "fixtures": "the 123 advisories of the confirmation test; a rival that reached its cost cap is scored on the fixtures it completed",
+    "rule": "for each rival: hybrid detection above the rival's; 90% lower bound of the difference above 0; hybrid false alarms at most the rival's + 5 points",
+    "rivals": [
+      {
+        "rival": "Vercel deepsec",
+        "pin": "17e37f7",
+        "fixtures": 117,
+        "repositories": 93,
+        "hybrid_detection": 29.1,
+        "hybrid_detection_lo": 21.8,
+        "hybrid_detection_hi": 36.5,
+        "rival_detection": 17.9,
+        "rival_detection_lo": 11.2,
+        "rival_detection_hi": 25.2,
+        "difference_pp": 11.1,
+        "difference_lo": 1.8,
+        "difference_hi": 20.0,
+        "hybrid_false_alarms": 11.1,
+        "rival_false_alarms": 21.4,
+        "hybrid_cost_per_run_usd": 0.298,
+        "rival_cost_per_run_usd": 0.253,
+        "rival_findings_per_run": 54.69,
+        "coverage": "complete",
+        "verdict": "holds",
+        "sensitivity_views": {
+          "strict-m1.5-k3": {
+            "detection_hybrid": 24.6,
+            "detection_rival": 11.5,
+            "holds": false
+          },
+          "strict-m4-k4": {
+            "detection_hybrid": 26.2,
+            "detection_rival": 13.1,
+            "holds": false
+          },
+          "union-m4-k4": {
+            "detection_hybrid": 33.3,
+            "detection_rival": 19.7,
+            "holds": false
+          }
+        }
+      },
+      {
+        "rival": "0 (0sec-labs/0)",
+        "pin": "v0.24.1 (42ab1fa)",
+        "fixtures": 117,
+        "repositories": 93,
+        "hybrid_detection": 29.1,
+        "hybrid_detection_lo": 21.8,
+        "hybrid_detection_hi": 36.5,
+        "rival_detection": 6.8,
+        "rival_detection_lo": 3.3,
+        "rival_detection_hi": 11.0,
+        "difference_pp": 22.2,
+        "difference_lo": 15.7,
+        "difference_hi": 28.8,
+        "hybrid_false_alarms": 11.1,
+        "rival_false_alarms": 6.8,
+        "hybrid_cost_per_run_usd": 0.298,
+        "rival_cost_per_run_usd": 0.064,
+        "rival_findings_per_run": 1.16,
+        "coverage": "complete",
+        "verdict": "holds",
+        "sensitivity_views": {
+          "strict-m1.5-k3": {
+            "detection_hybrid": 24.6,
+            "detection_rival": 6.6,
+            "holds": false
+          },
+          "strict-m4-k4": {
+            "detection_hybrid": 26.2,
+            "detection_rival": 8.2,
+            "holds": false
+          },
+          "union-m4-k4": {
+            "detection_hybrid": 33.3,
+            "detection_rival": 7.7,
+            "holds": false
+          }
+        }
+      },
+      {
+        "rival": "OpenHack",
+        "pin": "6a0675e",
+        "fixtures": 113,
+        "repositories": 90,
+        "hybrid_detection": 29.2,
+        "hybrid_detection_lo": 21.7,
+        "hybrid_detection_hi": 36.9,
+        "rival_detection": 16.8,
+        "rival_detection_lo": 11.0,
+        "rival_detection_hi": 23.1,
+        "difference_pp": 12.4,
+        "difference_lo": 5.3,
+        "difference_hi": 19.8,
+        "hybrid_false_alarms": 11.5,
+        "rival_false_alarms": 6.2,
+        "hybrid_cost_per_run_usd": 0.301,
+        "rival_cost_per_run_usd": 0.206,
+        "rival_findings_per_run": 3.99,
+        "coverage": "cost cap after 6 fixtures left out",
+        "verdict": "false-alarm margin missed",
+        "sensitivity_views": {
+          "strict-m1.5-k3": {
+            "detection_hybrid": 25.0,
+            "detection_rival": 13.3,
+            "holds": false
+          },
+          "strict-m4-k4": {
+            "detection_hybrid": 26.7,
+            "detection_rival": 13.3,
+            "holds": false
+          },
+          "union-m4-k4": {
+            "detection_hybrid": 33.6,
+            "detection_rival": 16.8,
+            "holds": false
+          }
+        }
+      },
+      {
+        "rival": "OpenAI Codex Security",
+        "pin": "npm 0.6.0 (13dcc6f)",
+        "fixtures": 29,
+        "repositories": 27,
+        "hybrid_detection": 31.0,
+        "hybrid_detection_lo": 17.2,
+        "hybrid_detection_hi": 46.4,
+        "rival_detection": 10.3,
+        "rival_detection_lo": 3.1,
+        "rival_detection_hi": 20.7,
+        "difference_pp": 20.7,
+        "difference_lo": 6.7,
+        "difference_hi": 35.7,
+        "hybrid_false_alarms": 6.9,
+        "rival_false_alarms": 17.2,
+        "hybrid_cost_per_run_usd": 0.393,
+        "rival_cost_per_run_usd": 0.399,
+        "rival_findings_per_run": 2.0,
+        "coverage": "campaign stopped by the executor (partial)",
+        "verdict": "holds on the partial campaign",
+        "sensitivity_views": {
+          "strict-m1.5-k3": {
+            "detection_hybrid": 26.7,
+            "detection_rival": 6.7,
+            "holds": false
+          },
+          "strict-m4-k4": {
+            "detection_hybrid": 33.3,
+            "detection_rival": 6.7,
+            "holds": false
+          },
+          "union-m4-k4": {
+            "detection_hybrid": 37.9,
+            "detection_rival": 13.8,
+            "holds": false
+          }
+        }
+      },
+      {
+        "rival": "Clearwing",
+        "pin": "b6e8eae",
+        "fixtures": 53,
+        "repositories": 50,
+        "hybrid_detection": 32.1,
+        "hybrid_detection_lo": 21.6,
+        "hybrid_detection_hi": 43.1,
+        "rival_detection": 24.5,
+        "rival_detection_lo": 15.1,
+        "rival_detection_hi": 35.2,
+        "difference_pp": 7.5,
+        "difference_lo": -3.8,
+        "difference_hi": 19.2,
+        "hybrid_false_alarms": 15.1,
+        "rival_false_alarms": 39.6,
+        "hybrid_cost_per_run_usd": 0.338,
+        "rival_cost_per_run_usd": 0.54,
+        "rival_findings_per_run": 22.17,
+        "coverage": "cost cap",
+        "verdict": "lead not separated",
+        "sensitivity_views": {
+          "strict-m1.5-k3": {
+            "detection_hybrid": 30.8,
+            "detection_rival": 19.2,
+            "holds": false
+          },
+          "strict-m4-k4": {
+            "detection_hybrid": 34.6,
+            "detection_rival": 19.2,
+            "holds": false
+          },
+          "union-m4-k4": {
+            "detection_hybrid": 37.7,
+            "detection_rival": 26.4,
+            "holds": false
+          }
+        }
+      },
+      {
+        "rival": "Visa VVAH",
+        "pin": "3d972f6",
+        "fixtures": 50,
+        "repositories": 47,
+        "hybrid_detection": 34.0,
+        "hybrid_detection_lo": 22.6,
+        "hybrid_detection_hi": 45.8,
+        "rival_detection": 28.0,
+        "rival_detection_lo": 17.6,
+        "rival_detection_hi": 38.8,
+        "difference_pp": 6.0,
+        "difference_lo": -4.0,
+        "difference_hi": 16.0,
+        "hybrid_false_alarms": 16.0,
+        "rival_false_alarms": 26.0,
+        "hybrid_cost_per_run_usd": 0.342,
+        "rival_cost_per_run_usd": 1.019,
+        "rival_findings_per_run": 8.81,
+        "coverage": "cost cap",
+        "verdict": "lead not separated",
+        "sensitivity_views": {
+          "strict-m1.5-k3": {
+            "detection_hybrid": 33.3,
+            "detection_rival": 29.2,
+            "holds": false
+          },
+          "strict-m4-k4": {
+            "detection_hybrid": 37.5,
+            "detection_rival": 29.2,
+            "holds": false
+          },
+          "union-m4-k4": {
+            "detection_hybrid": 40.0,
+            "detection_rival": 28.0,
+            "holds": false
+          }
+        }
+      }
+    ]
+  }
+}

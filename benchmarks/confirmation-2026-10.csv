@@ -1,0 +1,4 @@
+harness,detection_pct,detection_ci90_low,detection_ci90_high,false_alarm_pct,mean_cost_usd_per_run,chance_match_pct
+SentryTower hybrid,29.1,21.8,36.5,11.1,0.30,8.8
+Piolium,11.1,6.6,16.2,9.4,0.10,5.5
+single-agent engine alone,22.2,15.3,29.7,8.5,0.08,6.1

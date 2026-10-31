@@ -1,0 +1,47 @@
+name: Bug report
+description: SentryTower does not work as the documentation says.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not report a vulnerability of SentryTower here: use the private form of the security policy (SECURITY.md).
+        Do not paste source code of a private repository, a key, or the content of an agent session.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The output of `sentrytower version`.
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment
+      options: [Container image, pipx or uv, GitHub Action, GitLab CI, Other]
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The command, the configuration without secrets, and a small public repository when possible.
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `sentrytower doctor --offline`
+      render: text
+  - type: textarea
+    id: run
+    attributes:
+      label: Relevant part of run.json
+      description: run.json holds numbers and codes, no prompt or answer text. Remove the repository path if it is private.
+      render: json

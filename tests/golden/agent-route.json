@@ -1,0 +1,112 @@
+{
+ "scenario": "agent-route",
+ "route": "agent",
+ "requests": [],
+ "agent_sessions": [
+  {
+   "argv": [
+    "--provider",
+    "openrouter",
+    "--model",
+    "z-ai/glm-5.3-flash",
+    "--print",
+    "--session-dir",
+    "<STATE>/.local/share/pi-sessions",
+    "--no-extensions",
+    "--extension",
+    "<STATE>/.local/share/pi-agent/pi-ext/numbered-read.ts",
+    "--extension",
+    "<STATE>/.local/share/pi-agent/pi-ext/repository-guard.ts",
+    "--no-skills",
+    "--no-prompt-templates",
+    "--no-themes",
+    "--no-context-files",
+    "--no-approve",
+    "--tools",
+    "read,grep,find,ls",
+    "<prompt sha256:5e57af3c47619bd5b71b7c405951fb0a1d6beefdb69a4ac43d31e03f196353c9>"
+   ],
+   "prompt": null,
+   "cwd": "<REPO>",
+   "env": {
+    "PI_CODING_AGENT_DIR": "<STATE>/.local/share/pi-agent",
+    "PI_PACKAGE_DIR": "<STATE>/.local/share/pi-agent/pi-package",
+    "PI_OFFLINE": "1"
+   },
+   "settings.json": {
+    "defaultProvider": "openrouter",
+    "defaultModel": "z-ai/glm-5.3-flash",
+    "defaultThinkingLevel": "medium",
+    "httpIdleTimeoutMs": 1200000,
+    "retry": {
+     "provider": {
+      "timeoutMs": 1200000,
+      "maxRetries": 0,
+      "maxRetryDelayMs": 60000
+     }
+    }
+   },
+   "models.json": {
+    "providers": {
+     "openrouter": {
+      "baseUrl": "http://127.0.0.1:<PORT>",
+      "apiKey": "$OPENROUTER_API_KEY",
+      "models": [
+       {
+        "id": "z-ai/glm-5.3-flash",
+        "name": "Z.ai GLM 5.3 Flash",
+        "reasoning": true,
+        "input": [
+         "text"
+        ],
+        "contextWindow": 1310720,
+        "maxTokens": 131072,
+        "cost": {
+         "input": 0.018,
+         "output": 0.14,
+         "cacheRead": 0.018,
+         "cacheWrite": 0
+        },
+        "samplingParams": {
+         "temperature": 1.0
+        }
+       }
+      ]
+     }
+    }
+   }
+  }
+ ],
+ "findings": [
+  {
+   "title": "Path traversal in read",
+   "severity": "high",
+   "cwe": [
+    "CWE-22"
+   ],
+   "engine": "single-agent",
+   "locations": [
+    [
+     "files.py",
+     51,
+     53
+    ]
+   ]
+  },
+  {
+   "title": "Command injection in ping",
+   "severity": "critical",
+   "cwe": [
+    "CWE-78"
+   ],
+   "engine": "single-agent",
+   "locations": [
+    [
+     "app.py",
+     60,
+     60
+    ]
+   ]
+  }
+ ]
+}

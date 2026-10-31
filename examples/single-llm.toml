@@ -1,0 +1,22 @@
+# SentryTower: single-LLM configuration (the default setup).
+#
+#   sentrytower audit ./repo --config examples/single-llm.toml
+#
+# One model runs every role. These values are the defaults: a run without a
+# configuration file is the same run. The key comes from the environment
+# (SENTRYTOWER_API_KEY or OPENROUTER_API_KEY); never put a key in this file.
+
+[models]
+default = "deepseek/deepseek-v4.1-flash-1017"
+
+[provider]
+base_url = "https://openrouter.ai/api/v1"
+max_parallel_requests = 8
+
+[budget]
+wall_clock_seconds = 14_400   # four hours
+# max_cost_usd = 2.0          # the default cost cap: the standard run; 0: no cap; more: a deeper run (a preview)
+# max_tokens = 20_000_000     # optional: an upper limit of the tokens of a run (without a cap: 20,000,000)
+
+[router]
+large_repo_files = 1000       # 1,000 files or fewer: funnel engine; more: single agent

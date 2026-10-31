@@ -1,0 +1,9 @@
+{
+  "name": "sentrytower-pi",
+  "private": true,
+  "description": "The pinned Pi coding agent of the SentryTower container image.",
+  "license": "Apache-2.0 OR MIT",
+  "dependencies": {
+    "@earendil-works/pi-coding-agent": "0.84.1"
+  }
+}

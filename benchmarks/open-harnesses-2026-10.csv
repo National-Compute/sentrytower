@@ -1,0 +1,7 @@
+rival,pin,fixtures,repositories,hybrid_detection,hybrid_detection_lo,hybrid_detection_hi,rival_detection,rival_detection_lo,rival_detection_hi,difference_pp,difference_lo,difference_hi,hybrid_false_alarms,rival_false_alarms,hybrid_cost_per_run_usd,rival_cost_per_run_usd,rival_findings_per_run,coverage,verdict
+Vercel deepsec,17e37f7,117,93,29.1,21.8,36.5,17.9,11.2,25.2,11.1,1.8,20.0,11.1,21.4,0.298,0.253,54.69,complete,holds
+0 (0sec-labs/0),v0.24.1 (42ab1fa),117,93,29.1,21.8,36.5,6.8,3.3,11.0,22.2,15.7,28.8,11.1,6.8,0.298,0.064,1.16,complete,holds
+OpenHack,6a0675e,113,90,29.2,21.7,36.9,16.8,11.0,23.1,12.4,5.3,19.8,11.5,6.2,0.301,0.206,3.99,cost cap after 6 fixtures left out,false-alarm margin missed
+OpenAI Codex Security,npm 0.6.0 (13dcc6f),29,27,31.0,17.2,46.4,10.3,3.1,20.7,20.7,6.7,35.7,6.9,17.2,0.393,0.399,2.0,campaign stopped by the executor (partial),holds on the partial campaign
+Clearwing,b6e8eae,53,50,32.1,21.6,43.1,24.5,15.1,35.2,7.5,-3.8,19.2,15.1,39.6,0.338,0.54,22.17,cost cap,lead not separated
+Visa VVAH,3d972f6,50,47,34.0,22.6,45.8,28.0,17.6,38.8,6.0,-4.0,16.0,16.0,26.0,0.342,1.019,8.81,cost cap,lead not separated

@@ -1,0 +1,134 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sentrytower"
+version = "0.1.0"
+description = "A swarm of AI sentries that audits your code like an attacker: vulnerabilities with file, line and CWE, as JSON, SARIF and Markdown."
+readme = "README.md"
+license = "Apache-2.0 OR MIT"
+license-files = ["LICENSE-APACHE", "LICENSE-MIT", "NOTICE"]
+requires-python = ">=3.11"
+authors = [{ name = "SentryTower contributors" }]
+keywords = ["security", "vulnerability", "static-analysis", "llm", "sarif", "code-scanning", "agent"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Security",
+    "Topic :: Software Development :: Quality Assurance",
+    "Typing :: Typed",
+]
+# No runtime dependencies: the package uses the Python standard library only.
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-timeout>=2.3",
+    "jsonschema>=4.23",
+    "ruff>=0.8",
+    "mypy>=1.13",
+]
+
+[project.urls]
+Homepage = "https://github.com/National-Compute/sentrytower"
+Documentation = "https://github.com/National-Compute/sentrytower/tree/main/docs"
+Issues = "https://github.com/National-Compute/sentrytower/issues"
+Changelog = "https://github.com/National-Compute/sentrytower/blob/main/CHANGELOG.md"
+
+[project.scripts]
+sentrytower = "sentrytower.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sentrytower"]
+
+[tool.hatch.build.targets.sdist]
+# The source distribution builds the wheel and the container image, and its tests pass on their own:
+# the pin test (tests/test_release.py) reads the release files.
+include = [
+    "src/sentrytower",
+    "tests",
+    "docs",
+    "examples",
+    "benchmarks",
+    "docker",
+    "README.md",
+    "CHANGELOG.md",
+    "CITATION.cff",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "Makefile",
+    "docker-compose.yml",
+    "action.yml",
+    "scripts/github_action.py",
+    "LICENSE-APACHE",
+    "LICENSE-MIT",
+    "NOTICE",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+timeout = 300
+markers = [
+    "slow: a test that runs a whole audit with fake models (seconds, not minutes)",
+]
+
+[tool.ruff]
+line-length = 140
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "BLE", "N", "UP", "SIM", "RUF", "S", "PTH", "C4", "PIE", "PL"]
+ignore = [
+    "E501",     # the formatter owns the line length; long table rows stay readable
+    "S101",     # assert documents an invariant of the engine
+    "S603",     # the engines start their own child processes with argument lists, never a shell
+    "S607",
+    "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR2004", "PLW0603",
+    "PTH123",
+    "SIM108",
+    "RUF001", "RUF002", "RUF003",  # "│" is the line-number separator of the numbered read
+    "B904",
+    "S110",
+    "PLC0415",  # local imports keep the start of the command line fast
+    # The engine modules keep the code of the measured runs; these rules would change
+    # only its style, and each change is a risk to the parity of the model requests.
+    "UP035", "UP041", "SIM105", "PLW2901", "PLW0108", "PLR1714", "PLR0917", "PTH105", "PTH118", "PTH202",
+    "RUF021", "C420", "B007",
+    "S105",     # "max_completion_tokens" is a field name, not a password
+    "S310",     # the funnel client opens the URL of the local gateway only
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S", "PLR", "PTH", "B", "SIM", "RUF012"]
+"src/sentrytower/funnel/inventory.py" = ["ALL"]  # a large rule table; kept as in the measured runs
+
+[tool.ruff.format]
+quote-style = "double"
+# The rule table of the inventory keeps the layout of the code of the measured runs.
+exclude = ["src/sentrytower/funnel/inventory.py"]
+
+[tool.mypy]
+python_version = "3.11"
+packages = ["sentrytower"]
+mypy_path = "src"
+warn_unused_ignores = false
+ignore_missing_imports = true
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = "sentrytower.funnel.inventory"
+ignore_errors = true

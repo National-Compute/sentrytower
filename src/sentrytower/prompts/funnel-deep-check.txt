@@ -1,0 +1,13 @@
+Examine one unit of this repository for security vulnerabilities. Do not modify the repository.
+
+The unit:
+- File: {{path}}
+- Unit: lines {{start_line}} to {{end_line}}{{symbol}}
+- Lines of interest, each with the weakness class to check:
+{{lines}}
+
+Start with the unit: read lines {{start_line}} to {{end_line}} of {{path}} with the offset and the limit of the read tool. Do not read a long file from the top. Then read the code that you need to trace the data: the callers, the routes and request handlers, the middleware and the configuration.
+
+Report only a vulnerability that you can support with a concrete path: the data that an attacker controls, the entry point where it comes in, and each step from there to the operation. If a check in the code stops the attack, report nothing for that operation. You can report other vulnerabilities in the code that you read when you can support each of them in the same way.
+
+Stop when you can decide with evidence from the code.

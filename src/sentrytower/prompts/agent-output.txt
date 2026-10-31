@@ -1,0 +1,6 @@
+When the audit is complete, write your final answer as one JSON object that conforms to the JSON Schema below. Write no other text before or after the object.
+
+- Report each distinct vulnerability one time, as one item in "findings".
+- "locations" lists the code that shows the vulnerability, the most important location first. Give each path relative to the repository root, and the first and last line.
+- "cwe" lists the CWE identifiers that name the weakness, if you know them.
+- If you find no vulnerability, write {"findings": []}.

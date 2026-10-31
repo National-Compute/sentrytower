@@ -1,0 +1,6 @@
+This session audits one slice of a large repository. Other sessions audit the other slices.
+
+Your slice:
+{{scopes}}
+
+Audit the code of your slice in depth: list its entry points, follow the untrusted input from each one, and open the files of the slice that a search shows to hold relevant code. Read code outside the slice when you need it to follow data into or out of the slice. Report the vulnerabilities in your slice, and other vulnerabilities that you find on the way and can support.

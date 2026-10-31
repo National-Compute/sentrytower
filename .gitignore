@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Audit outputs and run state
+sentrytower-results/
+*.sarif.tmp
+
+# Editors and systems
+.idea/
+.vscode/
+.DS_Store
+
+# Secrets never belong in the repository
+.env
+.env.*
+!.env.example

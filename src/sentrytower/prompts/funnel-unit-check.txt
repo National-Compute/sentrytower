@@ -1,0 +1,14 @@
+Audit this code for security vulnerabilities. Report each vulnerability with file, line, CWE, and a short reason, or report none.{{lens}}
+
+Released upstream code can contain vulnerabilities. If code is the same as a public release, or looks unmodified, that is not evidence that it is safe. Assess the code itself.
+
+File: {{path}}
+The code below shows lines {{shown}} of the file. Each line starts with its line number and "│".
+
+{{fence}}{{language}}
+{{code}}
+{{fence}}
+
+Write your answer as one JSON object in this form, and no other text:
+{"findings": [{"file": "<path of the file>", "line": <line number>, "quote": "<the exact text of that line, without the line number>", "cwe": "CWE-<number>", "confidence": "<high, medium or low>", "reason": "<short reason>"}]}
+If you find no vulnerability, write {"findings": []}.

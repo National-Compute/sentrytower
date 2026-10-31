@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["findings"],
+  "additionalProperties": false,
+  "properties": {
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "title",
+          "locations",
+          "severity",
+          "evidence",
+          "exploit_conditions"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Short name of the vulnerability."
+          },
+          "locations": {
+            "type": "array",
+            "minItems": 1,
+            "description": "The code that shows the vulnerability, the most important location first.",
+            "items": {
+              "type": "object",
+              "required": ["path", "line_start", "line_end"],
+              "additionalProperties": false,
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Path of the file, relative to the repository root."
+                },
+                "line_start": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "First line of the code."
+                },
+                "line_end": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Last line of the code."
+                },
+                "note": {
+                  "type": "string",
+                  "description": "What this code does in the vulnerability."
+                }
+              }
+            }
+          },
+          "cwe": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^CWE-[0-9]+$"
+            },
+            "description": "The CWE identifiers that name the weakness."
+          },
+          "severity": {
+            "enum": ["critical", "high", "medium", "low"]
+          },
+          "evidence": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The code at the locations and why it is vulnerable."
+          },
+          "exploit_conditions": {
+            "type": "string",
+            "minLength": 1,
+            "description": "What an attacker must control, and what the attacker can then do."
+          }
+        }
+      }
+    }
+  }
+}

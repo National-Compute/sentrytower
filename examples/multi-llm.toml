@@ -1,0 +1,53 @@
+# SentryTower: multi-LLM configuration.
+#
+#   sentrytower audit ./repo --config examples/multi-llm.toml
+#
+# Each role of the funnel and the single agent can use its own model. The
+# default runs one model for every role; the detection rate and the cost of a
+# multi-LLM run depend on the models.
+#
+# Roles:
+#   rating        rates unit cards when the queue is larger than the unit-check budget (short answers)
+#   unit_check    one plain question for each code unit (the most calls)
+#   triage        a blind verification of each lead (short answers)
+#   verify        a blind verification of each deep-check finding (short answers)
+#   deep_check    an agent session for each unit with a triaged lead (tool use, long context)
+#   free_roaming  an agent session on the whole repository (tool use, long context)
+#   agent         the agent session of a repository with more than 1,000 files
+
+[models]
+default = "deepseek/deepseek-v4.1-flash-1017"
+# A small, cheap model for the many short calls:
+unit_check = "vendor/small-model"
+triage = "vendor/small-model"
+# A strong agentic model for the sessions that read and trace code:
+deep_check = "vendor/agentic-model"
+free_roaming = "vendor/agentic-model"
+agent = "vendor/agentic-model"
+
+# A model without a policy gets the generic policy: no reasoning effort, no
+# provider route, a completion ceiling of 32,768 tokens and no prices. Give
+# each model its policy so that the gateway sends the right settings and can
+# estimate the cost when the provider reports none.
+[policies."vendor/small-model"]
+reasoning_effort = "low"
+max_completion_tokens = 16_384
+context_window = 131_072
+input_cost_per_million = 0.10
+output_cost_per_million = 0.40
+cache_read_cost_per_million = 0.02
+
+[policies."vendor/agentic-model"]
+reasoning_effort = "medium"
+max_completion_tokens = 65_536
+context_window = 262_144
+input_cost_per_million = 1.00
+output_cost_per_million = 4.00
+cache_read_cost_per_million = 0.10
+
+[budget]
+wall_clock_seconds = 14_400
+# The engines plan with the tokens that $10 buys at the highest price of the models of the route. With
+# these prices that is about 15M tokens on the funnel route (fewer than the standard run, so the dollars
+# end the run) and depth 2.2 on the agent route (a preview: more checks).
+max_cost_usd = 10.0

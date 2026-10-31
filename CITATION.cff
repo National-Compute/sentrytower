@@ -1,0 +1,24 @@
+cff-version: 0.1.0
+message: If you use SentryTower, please cite it with these metadata.
+title: "SentryTower: size-routed LLM security audits of source repositories"
+type: software
+authors:
+  - name: The SentryTower Authors
+version: 0.1.0
+date-released: 2026-11-01
+license:
+  - Apache-2.0
+  - MIT
+repository-code: https://github.com/National-Compute/sentrytower
+abstract: >-
+  SentryTower is an LLM security-audit harness. It counts the files of a
+  repository and sends it to a funnel engine (1,000 files or fewer) or to a
+  single agent (more). In a pre-registered test on 123 fresh security
+  advisories, with the same model, budget and sandbox, it detected 29.1% of
+  the vulnerabilities against 11.1% for Piolium.
+keywords:
+  - security
+  - vulnerability detection
+  - large language models
+  - static analysis
+  - SARIF

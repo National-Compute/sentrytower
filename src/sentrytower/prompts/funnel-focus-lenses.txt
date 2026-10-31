@@ -1,0 +1,7 @@
+injection: untrusted input that reaches an SQL or NoSQL query, an operating system command, a template, an expression or code evaluator, or an LDAP or XPath query
+access: authentication, sessions and authorization, that is, each route, handler or operation that changes state or reads protected data and the check that must run before it, access to the objects of another user, and changes of privilege
+files-and-requests: file paths, uploads and downloads, the extraction of archives, server-side requests to an address that the input controls, and redirects
+parsers: the deserialization of untrusted data, XML and YAML parsers, prototype pollution, mass assignment and type confusion
+memory: memory safety, that is, buffer bounds, integer overflow before an allocation or a copy, use after free, double free, format strings and unsafe code blocks
+secrets-and-crypto: cryptography, randomness, secrets in code or configuration, the checks of certificates and signatures, and security settings
+web-output: output encoding and cross-site scripting, cross-site request forgery, and the CORS and other security controls of a browser
