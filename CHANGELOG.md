@@ -9,6 +9,21 @@ engine parameters) is always a notable change.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-09
+
+### Added
+
+- `install.sh`: installs the `sentrytower` command from a clone on macOS
+  and Linux with uv, gets the tools of the agent where it can without
+  administrator rights, then starts the guided setup.
+
+### Changed
+
+- The release attests the build provenance of the files and the image only
+  when the repository is public. GitHub keeps the attestations of a private
+  repository only on an Enterprise plan. The image keeps its BuildKit
+  provenance and SBOM.
+
 ## [0.1.0] - 2026-11-01
 
 The first public release, a beta.

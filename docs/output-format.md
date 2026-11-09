@@ -72,7 +72,7 @@ within version 1.
 {
   "$schema": "https://raw.githubusercontent.com/National-Compute/sentrytower/v1/src/sentrytower/schemas/findings-v1.schema.json",
   "schema_version": "1.0.0",
-  "tool": {"name": "SentryTower", "version": "0.1.0"},
+  "tool": {"name": "SentryTower", "version": "0.1.1"},
   "run": {
     "id": "5f0c3b1e9d2a4c7f8e6b1a2d3c4e5f60",
     "route": "funnel",

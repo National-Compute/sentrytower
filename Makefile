@@ -1,7 +1,7 @@
 # SentryTower: common tasks. Run `make help` for the list.
 PYTHON ?= python3
 VENV ?= .venv
-IMAGE ?= sentrytower:0.1.0
+IMAGE ?= sentrytower:0.1.1
 REPO ?= .
 OUT ?= $(HOME)/sentrytower-results
 BIN := $(VENV)/bin

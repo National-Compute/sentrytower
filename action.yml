@@ -60,7 +60,7 @@ inputs:
     description: On a public repository, also show the titles, files and lines of the findings in the job summary, put the findings in the workflow artifact, and upload the SARIF file for pull request runs. Every reader of the repository can then read them. By default a public repository gets counts only. Private and internal repositories always get the findings.
     default: "false"
   image:
-    description: The SentryTower image to run. Empty pulls the published image of this version of the action, ghcr.io/national-compute/sentrytower:0.1.0. Give another image to override it, for example a mirror in your registry or a digest pin (ghcr.io/national-compute/sentrytower:0.1.0@sha256:...). The action does not build an image.
+    description: The SentryTower image to run. Empty pulls the published image of this version of the action, ghcr.io/national-compute/sentrytower:0.1.1. Give another image to override it, for example a mirror in your registry or a digest pin (ghcr.io/national-compute/sentrytower:0.1.1@sha256:...). The action does not build an image.
     default: ""
   docker-args:
     description: Extra arguments of docker run (for example a network for a local endpoint). The words are split at spaces.
@@ -118,7 +118,7 @@ runs:
       env:
         INPUT_IMAGE: ${{ inputs.image }}
         # The published image of this version; tests/test_release.py checks that it names the package version.
-        DEFAULT_IMAGE: ghcr.io/national-compute/sentrytower:0.1.0
+        DEFAULT_IMAGE: ghcr.io/national-compute/sentrytower:0.1.1
       run: |
         set -euo pipefail
         image="${INPUT_IMAGE:-${DEFAULT_IMAGE}}"

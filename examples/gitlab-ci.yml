@@ -9,7 +9,7 @@
 sentrytower:
   stage: test
   image:
-    name: ghcr.io/national-compute/sentrytower:0.1.0   # the published image (or your build of docker/Dockerfile)
+    name: ghcr.io/national-compute/sentrytower:0.1.1   # the published image (or your build of docker/Dockerfile)
     entrypoint: [""]
   variables:
     SENTRYTOWER_API_KEY: $OPENROUTER_API_KEY
