@@ -1,11 +1,11 @@
-cff-version: 0.1.0
+cff-version: 1.2.0
 message: If you use SentryTower, please cite it with these metadata.
 title: "SentryTower: size-routed LLM security audits of source repositories"
 type: software
 authors:
   - name: The SentryTower Authors
-version: 0.1.0
-date-released: 2026-11-01
+version: 0.1.1
+date-released: 2026-11-09
 license:
   - Apache-2.0
   - MIT

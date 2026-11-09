@@ -1,8 +1,9 @@
 # The release of a version. It starts only when the owner pushes a tag vX.Y.Z that names the package
 # version. It runs the tests, attaches the wheel and the source distribution to a GitHub release, and
 # publishes the container image of the GitHub Action for linux/amd64 and linux/arm64 to
-# ghcr.io/national-compute/sentrytower. Each file and the image get a signed build provenance
-# attestation. There is no PyPI upload.
+# ghcr.io/national-compute/sentrytower. In a public repository, each file and the image get a signed build
+# provenance attestation; GitHub stores attestations of a private repository only on an Enterprise plan.
+# There is no PyPI upload.
 name: Release
 
 on:
@@ -99,6 +100,7 @@ jobs:
           test -f "dist/sentrytower-${VERSION}.tar.gz"
           (cd dist && sha256sum "sentrytower-${VERSION}-py3-none-any.whl" "sentrytower-${VERSION}.tar.gz" | tee SHA256SUMS)
       - name: Attest the build provenance of the wheel and the source distribution
+        if: ${{ !github.event.repository.private }}
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: |
@@ -184,11 +186,14 @@ jobs:
           provenance: mode=max
           sbom: true
       - name: Attest the build provenance of the image
+        if: ${{ !github.event.repository.private }}
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-name: ${{ env.IMAGE }}
           subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true
+          # The attestation stays in the attestation store of GitHub, where `gh attestation verify` reads it. GHCR
+          # refuses the upload of the attestation with the token of the workflow (403).
+          push-to-registry: false
           create-storage-record: false
 
   release:
@@ -210,6 +215,8 @@ jobs:
           name: dist
           path: dist
       - name: Write the release notes from CHANGELOG.md
+        env:
+          PRIVATE: ${{ github.event.repository.private }}
         run: |
           notes="${RUNNER_TEMP}/notes.md"
           awk -v head="## [${VERSION}]" 'index($0, head) == 1 { take = 1; next } take && /^## \[/ { exit } take { print }' CHANGELOG.md > "${notes}"
@@ -218,11 +225,16 @@ jobs:
           ## Install
 
           \`\`\`sh
+          git clone --branch v${VERSION} https://github.com/National-Compute/sentrytower && cd sentrytower && ./install.sh
           uv tool install git+https://github.com/National-Compute/sentrytower@v${VERSION}
           docker run --rm ${IMAGE}:${VERSION} --version
           \`\`\`
 
           GitHub Action: \`uses: National-Compute/sentrytower@v${VERSION}\`.
+          EOF
+          # The attestation steps run only in a public repository.
+          if [ "${PRIVATE}" != true ]; then
+            cat >> "${notes}" <<EOF
 
           Check the provenance of a file or of the image:
 
@@ -231,6 +243,7 @@ jobs:
           gh attestation verify oci://${IMAGE}:${VERSION} --repo National-Compute/sentrytower
           \`\`\`
           EOF
+          fi
       - name: Create the release
         env:
           GH_TOKEN: ${{ github.token }}

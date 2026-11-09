@@ -8,9 +8,9 @@ shows the model the paths of the measured runs (`/workspace/repo` and
 
 | Way | Command | What it needs |
 | --- | --- | --- |
-| [Command line](#command-line) | `uv tool install git+https://github.com/National-Compute/sentrytower@v0.1.0` | Python 3.11 or later, uv, Node.js 22.19 or later, the Pi CLI 0.84.1, ripgrep and fd |
-| [Container image](#container-image) | `docker run --rm ghcr.io/national-compute/sentrytower:0.1.0 --version` | Docker (or another OCI runtime) on Linux, macOS or Windows; linux/amd64 or linux/arm64 |
-| [GitHub Action](#github-action) | `uses: National-Compute/sentrytower@v0.1.0` | A Linux runner with Docker and Python 3.9 or later (each GitHub-hosted Linux runner has both) |
+| [Command line](#command-line) | `uv tool install git+https://github.com/National-Compute/sentrytower@v0.1.1` | Python 3.11 or later, uv, Node.js 22.19 or later, the Pi CLI 0.84.1, ripgrep and fd |
+| [Container image](#container-image) | `docker run --rm ghcr.io/national-compute/sentrytower:0.1.1 --version` | Docker (or another OCI runtime) on Linux, macOS or Windows; linux/amd64 or linux/arm64 |
+| [GitHub Action](#github-action) | `uses: National-Compute/sentrytower@v0.1.1` | A Linux runner with Docker and Python 3.9 or later (each GitHub-hosted Linux runner has both) |
 
 Each way needs a key of the model provider in the environment
 (`SENTRYTOWER_API_KEY` or `OPENROUTER_API_KEY`), except a model server on
@@ -30,12 +30,12 @@ Requirements: Python 3.11 or later, [uv](https://docs.astral.sh/uv/)
 (or pipx), Node.js 22.19 or later, the Pi CLI 0.84.1, ripgrep and fd.
 
 ```sh
-uv tool install git+https://github.com/National-Compute/sentrytower@v0.1.0
-# or: pipx install git+https://github.com/National-Compute/sentrytower@v0.1.0
+uv tool install git+https://github.com/National-Compute/sentrytower@v0.1.1
+# or: pipx install git+https://github.com/National-Compute/sentrytower@v0.1.1
 npm install -g @earendil-works/pi-coding-agent@0.84.1
 # ripgrep and fd: brew install ripgrep fd | apt install ripgrep fd-find | ...
 
-sentrytower --version                          # sentrytower 0.1.0
+sentrytower --version                          # sentrytower 0.1.1
 export SENTRYTOWER_API_KEY=...                 # an OpenRouter key
 sentrytower doctor                             # checks each requirement and sends one tiny request
 sentrytower audit path/to/repo --out ~/sentrytower-results   # keep the outputs outside the repository
@@ -45,8 +45,8 @@ sentrytower audit path/to/repo --out ~/sentrytower-results   # keep the outputs 
 request. The GitHub release of each version also has the wheel, the source
 distribution and `SHA256SUMS`; the wheel and the source distribution each
 have a build provenance attestation
-(`gh attestation verify sentrytower-0.1.0-py3-none-any.whl --repo National-Compute/sentrytower`).
-`uv tool install ./sentrytower-0.1.0-py3-none-any.whl` installs the
+(`gh attestation verify sentrytower-0.1.1-py3-none-any.whl --repo National-Compute/sentrytower`).
+`uv tool install ./sentrytower-0.1.1-py3-none-any.whl` installs the
 downloaded wheel. From a clone of this repository: `uv tool install .` or
 `pipx install .`. The package has no runtime dependency: it uses the Python
 standard library only.
@@ -64,7 +64,7 @@ It needs no other tool: Python, Node.js, the Pi CLI, ripgrep and fd are in
 the image.
 
 ```sh
-docker run --rm ghcr.io/national-compute/sentrytower:0.1.0 --version
+docker run --rm ghcr.io/national-compute/sentrytower:0.1.1 --version
 
 mkdir -p ~/sentrytower-results                 # outside the audited repository
 docker run --rm \
@@ -73,7 +73,7 @@ docker run --rm \
   --cap-drop ALL --security-opt no-new-privileges \
   -v "$PWD:/workspace/repo:ro" \
   -v ~/sentrytower-results:/workspace/out \
-  ghcr.io/national-compute/sentrytower:0.1.0 audit /workspace/repo --out /workspace/out
+  ghcr.io/national-compute/sentrytower:0.1.1 audit /workspace/repo --out /workspace/out
 ```
 
 Each published image has a signed build provenance attestation and an SBOM.
@@ -81,13 +81,13 @@ Check the provenance with the GitHub CLI, and pin the digest that it shows
 when you want an image that cannot change:
 
 ```sh
-gh attestation verify oci://ghcr.io/national-compute/sentrytower:0.1.0 --repo National-Compute/sentrytower
+gh attestation verify oci://ghcr.io/national-compute/sentrytower:0.1.1 --repo National-Compute/sentrytower
 ```
 
 To build the image yourself, from a clone of this repository:
 
 ```sh
-docker build -f docker/Dockerfile -t sentrytower:0.1.0 .
+docker build -f docker/Dockerfile -t sentrytower:0.1.1 .
 make docker-smoke      # the image against a fake model endpoint: no key, no model call
 ```
 
@@ -138,7 +138,7 @@ For another endpoint, add its host to the `model_endpoint` list of
 ## GitHub Action
 
 The action at the root of this repository pulls the published image of its
-version (`ghcr.io/national-compute/sentrytower:0.1.0` for `@v0.1.0`), runs
+version (`ghcr.io/national-compute/sentrytower:0.1.1` for `@v0.1.1`), runs
 the audit with the repository mounted read only, writes a summary of the
 run to the job summary, uploads `findings.sarif` to GitHub code scanning,
 and uploads the outputs as a workflow artifact. It does not build an image.
@@ -156,7 +156,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: National-Compute/sentrytower@v0.1.0
+      - uses: National-Compute/sentrytower@v0.1.1
         with:
           api-key: ${{ secrets.OPENROUTER_API_KEY }}
           fail-on: high                 # optional
@@ -263,7 +263,7 @@ spec:
             - { name: repo, mountPath: /workspace/repo }
       containers:
         - name: sentrytower
-          image: ghcr.io/national-compute/sentrytower:0.1.0   # or the image of docker/Dockerfile in your registry
+          image: ghcr.io/national-compute/sentrytower:0.1.1   # or the image of docker/Dockerfile in your registry
           args: ["audit", "/workspace/repo", "--out", "/workspace/out/results"]
           env:
             - name: SENTRYTOWER_API_KEY
