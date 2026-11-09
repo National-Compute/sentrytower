@@ -24,7 +24,7 @@ jobs:
   check:
     name: Check the tag and run the tests
     if: github.repository == 'National-Compute/sentrytower'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -76,7 +76,7 @@ jobs:
   build:
     name: Build the wheel and the source distribution
     needs: check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     permissions:
       contents: read
@@ -118,7 +118,7 @@ jobs:
   image:
     name: Build, test and push the image
     needs: check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 90
     permissions:
       contents: read
@@ -199,7 +199,7 @@ jobs:
   release:
     name: Create the GitHub release
     needs: [check, build, image]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: write # create the release and attach its files

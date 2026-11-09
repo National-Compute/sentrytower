@@ -33,12 +33,14 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
+# Exact versions: a new release of ruff, mypy or pytest can change the result of CI on an unchanged commit.
+# Dependabot proposes each update as a pull request, so that CI checks it first.
 dev = [
-    "pytest>=8.3",
-    "pytest-timeout>=2.3",
-    "jsonschema>=4.23",
-    "ruff>=0.8",
-    "mypy>=1.13",
+    "pytest==9.2.0",
+    "pytest-timeout==2.4.0",
+    "jsonschema==4.26.0",
+    "ruff==0.17.4",
+    "mypy==2.4.1",
 ]
 
 [project.urls]
