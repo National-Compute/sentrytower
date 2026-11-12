@@ -1,8 +1,13 @@
 """The configuration and the command of the agent: the Pi coding agent in print mode.
 
 The agent gets the Pi built-in tools read, grep, find and ls, and nothing
-else: Pi loads no skill, prompt template, theme, context file or other
-extension, only two extensions of SentryTower:
+else: Pi loads no skill, prompt template, theme, context file, project
+file of the audited repository or other extension, only two extensions of
+SentryTower. ``--no-extensions`` also keeps out the extensions that Pi
+builds in (codemode, tool search, MCP and llama.cpp): Pi loads one of them
+only when ``--extension builtin:NAME`` names it. ``--no-approve`` makes
+Pi ignore the ``.pi`` folder of the repository, its settings and its
+``mcp.json`` included. The two extensions:
 
 - numbered-read: a ``tool_result`` hook that puts the line number in front
   of each line of a text read result (``{n:>5}│``);
@@ -28,12 +33,19 @@ The agent folder (``PI_CODING_AGENT_DIR``) holds:
 - ``pi-package``: a link to the Pi package, so that the documentation path
   that Pi shows in its system prompt is a neutral path.
 
-These files are the files of the measured runs, byte for byte, with two
+These files are the files of the measured runs, byte for byte, with three
 exceptions. The credential reference: the measured runs gave Pi a literal
 placeholder key, and the gateway of a release run checks a random
 credential of the run. The repository guard: the measured runs ran each
 agent in a sandbox that held nothing else to read, and a release run can
-hold the provider key and other files next to the repository.
+hold the provider key and other files next to the repository. The
+numbered-read extension: its comments and type annotations name Pi
+1.5.0; without them its code is the measured code.
+
+The measured runs ran Pi 0.84.1 with the same command and files. Pi 1.5.0
+sends another system prompt and leaves ``"strict": false`` out of each
+tool definition; the task prompt, the tool descriptions and parameters and
+the tool results are the same.
 """
 
 from __future__ import annotations
@@ -51,7 +63,7 @@ from ..programs import which
 from .runner import AGENT_TOOLS, LIMIT_FRACTION, RESERVE_FRACTION
 
 PI_PACKAGE = "@earendil-works/pi-coding-agent"
-PI_VERSION = "0.84.1"
+PI_VERSION = "1.5.0"
 PROVIDER = "openrouter"
 EXTENSION_NAME = "numbered-read"
 EXTENSION_SOURCE = "numbered_read.ts"
@@ -65,8 +77,8 @@ SAMPLING = {"temperature": 1.0}
 PROMPT_PACKAGE = "sentrytower.prompts"
 AUDIT_PROMPT_FILES = ("agent-audit.txt", "agent-output.txt", "agent-findings.schema.json")
 FINAL_MESSAGE_FILE = "agent-final.txt"
-# The places of the Pi CLI in the container image and in a global npm install.
-PI_CANDIDATES = ("/opt/pi/dist/cli.js", "/usr/local/bin/pi")
+# The places of the Pi CLI (the ``bin`` of its package) in the container image and in a global npm install.
+PI_CANDIDATES = ("/opt/pi/dist/bundle/cli.js", "/usr/local/bin/pi")
 
 
 def _prompt(name: str) -> str:
@@ -97,8 +109,15 @@ def find_pi(configured: str | None = None) -> Path | None:
 
 
 def pi_package_directory(cli: Path) -> Path:
-    """The package folder of the Pi CLI (``dist/cli.js`` two levels down)."""
-    package = cli.resolve().parent.parent
+    """The package folder of the Pi CLI: the nearest folder above the script, after links, with a ``package.json``.
+
+    The ``bin`` of the package is ``dist/bundle/cli.js``; ``dist/cli.js``
+    also runs Pi. Either finds the package.
+    """
+    script = cli.resolve()
+    package = next((folder for folder in script.parents if (folder / "package.json").is_file()), None)
+    if package is None:
+        raise ValueError(f"{cli} is not the {PI_PACKAGE} command")
     manifest = json.loads((package / "package.json").read_text())
     if manifest.get("name") != PI_PACKAGE:
         raise ValueError(f"{cli} is not the {PI_PACKAGE} command")

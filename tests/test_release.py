@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # A version as the package writes it (0.2.0, 0.2.0rc2, 0.2.0.dev1) and the other forms that a stale pin can have
 # (0.2.0-rc.1, 0.2.0-beta).
 VERSION = r"(?P<version>\d+\.\d+\.\d+(?:[-.]?(?:a|b|rc|alpha|beta|pre|dev|post)\.?\d*)*)"
-# Each kind of reference that names the version of SentryTower. A version of another tool (Pi 0.84.1,
+# Each kind of reference that names the version of SentryTower. A version of another tool (Pi 1.5.0,
 # actions/checkout@v7) is not a reference: each pattern names SentryTower or a field of its own files.
 PATTERNS = {
     "a git or Action pin": re.compile(r"(?i)\bsentrytower(?:\.git)?@v" + VERSION),
@@ -180,7 +180,7 @@ def test_the_scan_accepts_the_current_pins_and_other_tools(tmp_path: Path) -> No
         "uv tool install ./sentrytower-0.2.0-py3-none-any.whl\n"
         "      - uses: National-Compute/sentrytower@v0\n"
         "      - uses: actions/checkout@v7\n"
-        "npm install -g @earendil-works/pi-coding-agent@0.84.1\n"
+        "npm install -g @earendil-works/pi-coding-agent@1.5.0\n"
         "cff-version: 1.2.0\n"
         "The default model of SentryTower 0.1 and 0.2.\n"
     )

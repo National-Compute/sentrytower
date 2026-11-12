@@ -15,11 +15,16 @@
  * A numbered result gets details.lineNumbers = {first, count}. Pi catches an
  * error in a hook and keeps the result unchanged with no visible error.
  *
- * The rules follow Pi 0.84.1, dist/core/tools/read.js: the first line is
+ * Pi 1.5.0 also gives a read result structuredContent (the plain text) for
+ * tools that call other tools, such as codemode. The model never gets it,
+ * and the agent loads no such tool. The hook returns none, so Pi drops the
+ * plain text, which no longer matches the numbered content.
+ *
+ * The rules follow Pi 1.5.0, dist/core/tools/read.js: the first line is
  * offset - 1 (at least 0, 0 without an offset), and Array.slice truncates a
  * fractional index.
  */
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ToolResultEventResult } from "@earendil-works/pi-coding-agent";
 
 const SEPARATOR = "│";
 const IMAGE_NOTE = "Read image file [";
@@ -39,7 +44,7 @@ function numbered(lines: string[], first: number): string {
   return lines.map((line, index) => `${String(first + index).padStart(5)}${SEPARATOR}${line}`).join("\n");
 }
 
-export function numberReadResult(event: ReadEvent) {
+export function numberReadResult(event: ReadEvent): ToolResultEventResult | undefined {
   if (event.toolName !== "read" || event.isError) return undefined;
   if (!Array.isArray(event.content) || event.content.length !== 1) return undefined;
   const block = event.content[0];

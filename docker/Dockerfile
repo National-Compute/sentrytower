@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 #
 # The SentryTower container image: Python 3.12, Node.js 24, the pinned Pi
-# coding agent 0.84.1, ripgrep 15.2.0 and fd 10.5.0, as in the measured runs.
+# coding agent 1.5.0, and ripgrep 15.2.0 and fd 10.5.0 as in the measured runs.
 # The release workflow publishes it for linux/amd64 and linux/arm64 as
 # ghcr.io/national-compute/sentrytower:<version>.
 #
@@ -32,7 +32,7 @@ FROM ${NODE_IMAGE} AS pi
 WORKDIR /opt/pi-install
 COPY docker/pi/package.json docker/pi/package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund \
- && test "$(node -p "require('./node_modules/@earendil-works/pi-coding-agent/package.json').version")" = "0.84.1" \
+ && test "$(node -p "require('./node_modules/@earendil-works/pi-coding-agent/package.json').version")" = "1.5.0" \
  && rm -rf /root/.npm
 
 # ---------------------------------------------------------------------------
@@ -117,13 +117,13 @@ COPY --from=tools /out/usr/local/bin/ /usr/local/bin/
 RUN --mount=type=bind,from=wheel,source=/wheels,target=/tmp/wheels \
     PYTHONDONTWRITEBYTECODE=1 pip install --no-cache-dir --no-deps --disable-pip-version-check --root-user-action=ignore /tmp/wheels/*.whl \
  && ln -s /opt/pi-install/node_modules/@earendil-works/pi-coding-agent /opt/pi \
- && ln -s /opt/pi/dist/cli.js /usr/local/bin/pi \
+ && ln -s /opt/pi/dist/bundle/cli.js /usr/local/bin/pi \
  && test "$(rg --version | head -1 | cut -d' ' -f2)" = "15.2.0" \
  && test "$(fd --version | cut -d' ' -f2)" = "10.5.0" \
  && node --version && sentrytower version
 ENV HOME=/home/dev \
     SENTRYTOWER_STATE_DIR=/home/dev \
-    SENTRYTOWER_PI=/opt/pi/dist/cli.js \
+    SENTRYTOWER_PI=/opt/pi/dist/bundle/cli.js \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 USER 1000:1000
