@@ -10,7 +10,7 @@
  * that points out of it. A refused call gets an error result, and the
  * session goes on.
  *
- * The hook resolves a path as Pi 0.84.1 does (dist/utils/paths.js and
+ * The hook resolves a path as Pi 1.5.0 does (dist/utils/paths.js and
  * dist/core/tools/path-utils.js): Unicode spaces, a leading "@", "~", file
  * URLs, the working folder, and the file-name variants of the read tool. A
  * path that does not exist passes: the tool reports it. The hook changes no

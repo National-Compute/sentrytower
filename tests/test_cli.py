@@ -45,9 +45,9 @@ def cli_env(rig, monkeypatch: pytest.MonkeyPatch):
 
 def test_version(capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["version"]) == 0
-    assert capsys.readouterr().out.startswith(f"sentrytower {__version__} (funnel v1.4, agent protocol v2.4, Pi 0.84.1")
+    assert capsys.readouterr().out.startswith(f"sentrytower {__version__} (funnel v1.4, agent protocol v2.4, Pi 1.5.0")
     assert main(["version", "--json"]) == 0
-    assert json.loads(capsys.readouterr().out)["pi_coding_agent"] == "0.84.1"
+    assert json.loads(capsys.readouterr().out)["pi_coding_agent"] == "1.5.0"
     with pytest.raises(SystemExit) as stop:
         main(["--version"])
     assert stop.value.code == 0
@@ -185,7 +185,7 @@ def test_doctor_fails_without_a_key_and_without_pi(cli_env, monkeypatch: pytest.
     monkeypatch.setenv("PATH", "/usr/bin:/bin")
     assert main(["doctor", "--offline"]) == 3
     output = capsys.readouterr().out
-    assert "[FAIL] api key" in output and "[FAIL] pi" in output and "npm install -g @earendil-works/pi-coding-agent@0.84.1" in output
+    assert "[FAIL] api key" in output and "[FAIL] pi" in output and "npm install -g @earendil-works/pi-coding-agent@1.5.0" in output
 
 
 def test_doctor_sends_one_tiny_request_to_the_endpoint(

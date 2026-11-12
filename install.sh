@@ -9,7 +9,7 @@
 #   2. Installs the sentrytower command from this folder with `uv tool install`.
 #   3. Installs the tools of the agent when it can do so without administrator rights: Node.js, ripgrep
 #      and fd with Homebrew on macOS, and the pinned Pi agent with npm. For each tool that it cannot
-#      install, it prints the command to run.
+#      install, and for another version of Pi that is installed, it prints the command to run.
 #   4. Starts `sentrytower setup` when it runs in a terminal.
 #
 # Run it again after `git pull` to install the new version.
@@ -107,6 +107,10 @@ if node_ok; then
 	if ! have pi; then
 		step "Installing the Pi agent $pi_version with npm"
 		npm install -g "$PI_PACKAGE@$pi_version" || later "npm install -g $PI_PACKAGE@$pi_version"
+	else
+		# Another version of Pi can serve other work on this computer: print the command, do not replace it.
+		found=$(PI_OFFLINE=1 pi --version 2>/dev/null || true)
+		[ "$found" = "$pi_version" ] || later "npm install -g $PI_PACKAGE@$pi_version   # replaces Pi ${found:-of unknown version}"
 	fi
 else
 	later "install Node.js 22.19 or later (https://nodejs.org/en/download)"

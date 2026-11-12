@@ -42,7 +42,7 @@ def test_the_agent_folder_and_the_command(tmp_path: Path) -> None:
     provider = json.loads((agent / "models.json").read_text())["providers"]["openrouter"]
     assert provider["baseUrl"] == "http://127.0.0.1:9" and provider["apiKey"] == "$OPENROUTER_API_KEY"
     assert provider["models"][0]["samplingParams"] == {"temperature": 1.0} and provider["models"][0]["maxTokens"] == 131_072
-    assert (agent / "bin" / "rg").resolve() == tools["rg"].resolve() and package.resolve() == cli.parent.parent.resolve()
+    assert (agent / "bin" / "rg").resolve() == tools["rg"].resolve() and package.resolve() == (tmp_path / "pi").resolve()
     assert pi.extension_path(agent).read_text().startswith("/**")
     assert "Repository guard" in pi.guard_path(agent).read_text()
     command = pi.agent_command(
@@ -70,6 +70,26 @@ def test_the_agent_folder_and_the_command(tmp_path: Path) -> None:
         "PI_OFFLINE": "1",
         "OPENROUTER_API_KEY": "run-credential",
     }
+
+
+def test_the_pi_package_is_found_from_its_bin_a_global_link_or_its_unbundled_script(tmp_path: Path) -> None:
+    # A global npm install: PREFIX/bin/pi links to the bin of the package, dist/bundle/cli.js.
+    package = tmp_path / "lib" / "node_modules" / "@earendil-works" / "pi-coding-agent"
+    bundle = fake_pi_package(package)
+    (package / "dist" / "cli.js").write_text("// the unbundled script\n")
+    (tmp_path / "bin").mkdir()
+    (tmp_path / "bin" / "pi").symlink_to(bundle)
+    for cli in (bundle, package / "dist" / "cli.js", tmp_path / "bin" / "pi"):
+        assert pi.pi_package_directory(cli) == package.resolve()
+        assert pi.pi_version(cli) == pi.PI_VERSION == "1.5.0"
+    # The nearest package.json above the script decides: another package is not Pi.
+    other = tmp_path / "other"
+    (other / "dist" / "bundle").mkdir(parents=True)
+    (other / "package.json").write_text(json.dumps({"name": "not-pi", "version": "1.5.0"}))
+    (other / "dist" / "bundle" / "cli.js").write_text("")
+    with pytest.raises(ValueError, match="is not the @earendil-works/pi-coding-agent command"):
+        pi.pi_package_directory(other / "dist" / "bundle" / "cli.js")
+    assert pi.pi_version(other / "dist" / "bundle" / "cli.js") is None
 
 
 def _run(tmp_path: Path, mode: dict[str, str], budget: int = 1_000_000) -> tuple[int, list[dict], dict]:

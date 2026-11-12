@@ -254,10 +254,10 @@ time.sleep(float(os.environ.get("FAKE_PI_SLEEP", "0.3")))
 
 
 def fake_pi_package(folder: Path) -> Path:
-    """A fake Pi package (the name and the version of the pinned package); return its ``dist/cli.js``."""
-    (folder / "dist").mkdir(parents=True, exist_ok=True)
-    (folder / "package.json").write_text(json.dumps({"name": "@earendil-works/pi-coding-agent", "version": "0.84.1"}))
-    cli = folder / "dist" / "cli.js"
+    """A fake Pi package (the name and the version of the pinned package); return its ``bin``, ``dist/bundle/cli.js``."""
+    (folder / "dist" / "bundle").mkdir(parents=True, exist_ok=True)
+    (folder / "package.json").write_text(json.dumps({"name": "@earendil-works/pi-coding-agent", "version": "1.5.0"}))
+    cli = folder / "dist" / "bundle" / "cli.js"
     cli.write_text(FAKE_PI.replace("@PYTHON@", sys.executable))
     cli.chmod(cli.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
     (folder / "README.md").write_text("fake\n")
