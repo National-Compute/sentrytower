@@ -133,7 +133,7 @@ Python 3.11+, Node.js 22.19+, the Pi agent, ripgrep and fd:
 
 ```sh
 uv tool install git+https://github.com/National-Compute/sentrytower@v0.1.1    # or: pipx install git+https://...@v0.1.1
-npm install -g @earendil-works/pi-coding-agent@0.84.1                        # the agent runtime
+npm install -g @earendil-works/pi-coding-agent@1.5.0                         # the agent runtime
 brew install ripgrep fd                                                      # or: apt install ripgrep fd-find
 
 sentrytower setup

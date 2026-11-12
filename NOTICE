@@ -14,14 +14,14 @@ following third-party software. It is installed from its official
 distribution at build time; this repository does not copy its source,
 except where noted.
 
-Pi coding agent (@earendil-works/pi-coding-agent) 0.84.1
+Pi coding agent (@earendil-works/pi-coding-agent) 1.5.0
   License: MIT
   Source: https://www.npmjs.com/package/@earendil-works/pi-coding-agent
   The agent engine runs the Pi CLI. src/sentrytower/agent/numbered_read.ts
   is a SentryTower extension for Pi that uses its extension API.
-  The image installs Pi and its 144 npm dependencies from
-  docker/pi/package-lock.json (licenses of the dependencies: MIT 70,
-  Apache-2.0 47, BSD-3-Clause 13, ISC 8, BlueOak-1.0.0 5, 0BSD 1). Each
+  The image installs Pi and its npm dependencies, 123 packages, from
+  docker/pi/package-lock.json (licenses: MIT 60, Apache-2.0 38,
+  BSD-3-Clause 13, ISC 7, BlueOak-1.0.0 3, 0BSD 1, Unlicense 1). Each
   package keeps its license file in the image under /opt/pi-install.
 
 ripgrep 15.2.0

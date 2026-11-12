@@ -158,10 +158,12 @@ in the run state record each move.
 
 The single-agent engine runs the
 [Pi coding agent](https://www.npmjs.com/package/@earendil-works/pi-coding-agent)
-0.84.1 in print mode with the protocol `agent-v2.4`:
+1.5.0 in print mode with the protocol `agent-v2.4`:
 
 - **Tools:** `read`, `grep`, `find` and `ls` only. No shell, no write, no
-  web, no skills, no prompt templates, no context files. One extension
+  web, no skills, no prompt templates, no context files, no MCP servers and
+  none of the extensions that Pi builds in (codemode, tool search); Pi
+  ignores the `.pi` folder of the audited repository. One extension
   numbers the lines of each read result (`{n:>5}│`).
 - **Prompt:** an audit request with a method (list the entry points, follow
   the untrusted input to the operations that can cause harm, check the

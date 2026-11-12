@@ -4,7 +4,7 @@
 #   SENTRYTOWER_API_KEY=<OpenRouter key> scripts/demo/record-readme.sh
 #
 # 1. Check that the program is the SentryTower version of this checkout, and
-#    that `sentrytower doctor --offline` finds the pinned tools (Pi 0.84.1,
+#    that `sentrytower doctor --offline` finds the pinned tools (Pi 1.5.0,
 #    ripgrep 15.2.0, fd 10.5.0) without a warning: the recording shows them.
 #    Clone DVWA (Damn Vulnerable Web Application, a PHP application that is
 #    vulnerable on purpose) at a pinned commit into a new temporary home folder.

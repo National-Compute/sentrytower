@@ -218,11 +218,18 @@ checks that the default configuration sends the same model requests:
   their SHA-256 values.
 
 The release differs from the benchmarked harness in these points. Only the
-first changes a request body, and only in its provider settings:
+first two change a request body:
 
 - The built-in OpenRouter routes add `data_collection: "deny"` to the
   provider settings of each request: OpenRouter then uses only the
   endpoints that do not store or train on the data.
+- The agent sessions run Pi 1.5.0; the benchmarked harness ran Pi 0.84.1
+  with the same command and configuration files. Pi 1.5.0 writes another
+  system prompt for each agent request and leaves `"strict": false` out of
+  each tool definition. The task prompt, the tool descriptions and
+  parameters, the tool results and the requests of the funnel's direct
+  calls are the same. The parity tests above ran with Pi 0.84.1 and have
+  not run again with Pi 1.5.0.
 
 - The gateway checks a random credential of the run on each local request.
   The benchmarked proxy accepted any local request.
