@@ -1,17 +1,28 @@
-"""The findings of a run in the public output format (``findings.json``, schema version 1.0.0).
+"""The findings of a run in the public output format (``findings.json``, schema version 2.0.0).
 
-Each finding has a title, a severity, CWE identifiers, a primary location
-(file and line range), up to three related locations, an explanation, the
-engine that found it and the route of the run. docs/output-format.md gives
-the full schema; ``schemas/findings-v1.schema.json`` is its JSON Schema.
+Each finding of ``findings.json`` is a ``Finding`` of the National Compute
+data contracts, version 1 (``contracts/schemas/finding/1.json``), the
+format of the hosted product; ``schemas/findings-v2.schema.json`` is the
+JSON Schema of the document, and docs/output-format.md gives each field.
+``OutputFinding.record`` writes a finding with the mappings of the
+contracts (``contracts/nc_contracts``), and ``from_contract`` reads one back:
 
-Optional fields hold the result of the run (``run.result``),
-the tier of each finding, and the state of its verification
-(``verification.status``: ``verified``; ``unverified``, with
-``verification.reason``, when the verification failed, was refused or did
-not run; ``none`` when the route does not verify the source of the finding).
+- ``severity``: one of the five levels of the CLI (``critical``, ``high``,
+  ``medium``, ``low``, ``unknown``); the contract's ``info`` never occurs;
+- ``evidence``: the class and the blind verification. The verification
+  never executes a claim, so the class is ``defective`` when a verified
+  majority called the finding exploitable and ``suspected`` otherwise;
+  ``verification.status`` is ``verified``, ``unverified`` (with
+  ``reason``: the verification failed, was refused or did not run) or
+  ``none`` (the route does not verify the source of the finding), with
+  the outcome and the score of the votes when they exist;
+- ``engine``: SentryTower, its version and the engine that found the
+  finding (``mode``);
+- ``fingerprint``: ``sentrytowerFindingHash/v1``, a stable identity across
+  runs;
+- ``properties``: the rank, the route, the tier and the votes of a slice.
 
-Engines:
+Engines (``engine.mode``):
 
 - ``free-roaming``: the agent session of the funnel on the whole repository;
 - ``deep-check``: an agent session of the funnel on one code unit with a
@@ -26,13 +37,26 @@ import hashlib
 import re
 from collections import Counter
 from dataclasses import dataclass
-from typing import Any, Iterable
+from typing import Any, Iterable, Mapping
 
 from . import __version__
 from .agent.answer import AgentFinding, cwe_labels, normalize_severity, relative_path
+from .contracts.nc_contracts import (
+    evidence_from_cli,
+    outcome_to_cli_verdict,
+    severity_from_cli,
+    severity_rank,
+    severity_to_cli,
+    status_from_cli,
+    status_to_cli,
+)
+from .contracts.nc_contracts.types import Evidence, Finding, Location, Target
 
-SCHEMA_VERSION = "1.0.0"
-SCHEMA_URL = "https://raw.githubusercontent.com/National-Compute/sentrytower/v1/src/sentrytower/schemas/findings-v1.schema.json"
+SCHEMA_VERSION = "2.0.0"
+SCHEMA_URL = "https://raw.githubusercontent.com/National-Compute/sentrytower/main/src/sentrytower/schemas/findings-v2.schema.json"
+TOOL_NAME = "SentryTower"
+FINGERPRINT_SCHEME = "sentrytowerFindingHash/v1"
+# The severities that the CLI gives, from the worst: the contract's scale without ``info``.
 SEVERITIES = ("critical", "high", "medium", "low", "unknown")
 SEVERITY_ORDER = {name: rank for rank, name in enumerate(SEVERITIES)}
 ENGINE_FREE = "free-roaming"
@@ -55,8 +79,9 @@ class OutputLocation:
     end_line: int
     note: str | None = None
 
-    def record(self) -> dict[str, Any]:
-        item: dict[str, Any] = {"path": self.path, "start_line": self.start_line, "end_line": self.end_line}
+    def record(self) -> Location:
+        """The location as a contract Location."""
+        item: Location = {"path": self.path, "startLine": self.start_line, "endLine": self.end_line}
         if self.note:
             item["note"] = self.note
         return item
@@ -99,35 +124,53 @@ class OutputFinding:
         return text
 
     def fingerprint(self) -> str:
-        """A stable identity of the finding across runs: the file, the first CWE and the title words."""
+        """A stable identity of the finding across runs: 32 hex digits of SHA-256 over the file, the first CWE and the title words."""
         first = self.location
         words = _SPACES.sub(" ", self.title.lower()).strip()
         material = "|".join([first.path if first else "", self.cwe[0] if self.cwe else "", words])
-        return "sha256:" + hashlib.sha256(material.encode("utf-8", "replace")).hexdigest()[:32]
+        return hashlib.sha256(material.encode("utf-8", "replace")).hexdigest()[:32]
 
-    def record(self) -> dict[str, Any]:
-        return {
-            "id": self.id,
-            "rank": self.rank,
-            "title": self.title,
-            "severity": self.severity,
-            "cwe": list(self.cwe),
-            "location": self.location.record() if self.location else None,
-            "related_locations": [location.record() for location in self.locations[1:]],
-            "explanation": self.explanation,
-            "evidence": self.evidence,
-            "exploit_conditions": self.exploit_conditions,
-            "engine": self.engine,
-            "route": self.route,
-            "confidence": self.confidence,
-            "verification": {
-                **(self.verification or {"verdict": None, "keep_score": None}),
+    def evidence_record(self) -> Evidence:
+        """The evidence of the finding: the contract's mapping of the verification of the CLI."""
+        given = self.verification or {}
+        return evidence_from_cli(
+            {
+                "verdict": given.get("verdict"),
+                "keep_score": self.confidence if self.confidence is not None else given.get("keep_score"),
                 "status": self.verification_status,
                 "reason": self.verification_reason,
-            },
-            "tier": self.tier,
-            "fingerprint": self.fingerprint(),
+            }
+        )
+
+    def record(self, target: Target | None = None) -> Finding:
+        """The finding as a contract Finding (version 1); ``target`` is the audited repository."""
+        # The fields come in the order of the schema, so the required ones after the description follow below.
+        finding: Finding = {  # type: ignore[typeddict-item]
+            "id": self.id,
+            "fingerprint": {"scheme": FINGERPRINT_SCHEME, "value": self.fingerprint()},
+            "kind": "code",
+            "title": self.title,
         }
+        if self.explanation:
+            finding["description"] = self.explanation
+        finding["severity"] = severity_from_cli(self.severity)
+        finding["evidence"] = self.evidence_record()
+        finding["engine"] = {"name": TOOL_NAME, "version": __version__, "mode": self.engine}
+        if self.cwe:
+            finding["ruleId"] = self.cwe[0]
+        if target is not None:
+            finding["target"] = target
+        if self.location is not None:
+            finding["location"] = self.location.record()
+        if len(self.locations) > 1:
+            finding["relatedLocations"] = [location.record() for location in self.locations[1:]]
+        finding["cwe"] = list(self.cwe)
+        properties: dict[str, Any] = {"rank": self.rank, "route": self.route, "tier": self.tier}
+        votes = (self.verification or {}).get("votes")
+        if isinstance(votes, list):
+            properties["votes"] = votes
+        finding["properties"] = properties
+        return finding
 
     def verification_label(self) -> str | None:
         """The label of a finding without a verification in the reports, else None."""
@@ -211,36 +254,118 @@ def from_funnel_item(item: dict[str, Any], *, rank: int, route: str, roots: tupl
     )
 
 
+def from_contract(item: Mapping[str, Any], *, position: int = 1) -> OutputFinding:
+    """An output finding from a contract Finding of ``findings.json`` (for ``sentrytower last``).
+
+    The inverse of ``OutputFinding.record``: the description becomes the
+    evidence text. A field of the wrong type takes its default, so a file
+    that another program changed cannot stop the command.
+    """
+    properties = _mapping(item.get("properties"))
+    verification = _mapping(_mapping(item.get("evidence")).get("verification"))
+    status = status_to_cli(status_from_cli(verification.get("status"))) if verification else NOT_VERIFIED
+    outcome = verification.get("outcome")
+    verdict = outcome_to_cli_verdict(outcome) if outcome in ("supports", "refutes", "inconclusive") else None
+    score = _score(verification.get("score"))
+    reason = verification.get("reason")
+    votes = properties.get("votes")
+    record: dict[str, Any] | None = None
+    if verdict is not None or score is not None or isinstance(votes, list):
+        record = {"verdict": verdict, "keep_score": score} | ({"votes": votes} if isinstance(votes, list) else {})
+    first = _location_from(item.get("location"))
+    related = [found for value in _list(item.get("relatedLocations")) if (found := _location_from(value))]
+    rank = properties.get("rank")
+    return OutputFinding(
+        rank=rank if isinstance(rank, int) and not isinstance(rank, bool) and rank >= 1 else position,
+        title=_text(item.get("title")),
+        severity=severity_to_cli(item.get("severity", "unknown")),
+        cwe=[value for value in _list(item.get("cwe")) if isinstance(value, str)],
+        locations=([first] if first else []) + related,
+        evidence=_text(item.get("description")),
+        exploit_conditions="",
+        engine=_text(_mapping(item.get("engine")).get("mode")),
+        route=_text(properties.get("route")),
+        confidence=score,
+        verification=record,
+        tier=2 if properties.get("tier") == 2 else 1,
+        verification_status=status,
+        verification_reason=reason if status == UNVERIFIED and isinstance(reason, str) and reason else None,
+    )
+
+
+def _mapping(value: Any) -> Mapping[str, Any]:
+    return value if isinstance(value, Mapping) else {}
+
+
+def _list(value: Any) -> list[Any]:
+    return value if isinstance(value, list) else []
+
+
+def _text(value: Any) -> str:
+    return value if isinstance(value, str) else ""
+
+
+def _score(value: Any) -> float | None:
+    return float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) and 0 <= value <= 1 else None
+
+
+def _line(value: Any) -> int | None:
+    return value if isinstance(value, int) and not isinstance(value, bool) and 1 <= value <= MAX_LINE else None
+
+
+def _location_from(value: Any) -> OutputLocation | None:
+    location = _mapping(value)
+    path = location.get("path")
+    if not isinstance(path, str) or not path:
+        return None
+    start = _line(location.get("startLine")) or 1
+    end = _line(location.get("endLine")) or start
+    note = location.get("note")
+    return OutputLocation(path, start, max(start, end), note if isinstance(note, str) and note else None)
+
+
 def severity_counts(findings: Iterable[OutputFinding]) -> dict[str, int]:
     counts = Counter(finding.severity for finding in findings)
     return {name: counts.get(name, 0) for name in SEVERITIES}
 
 
 def findings_document(findings: list[OutputFinding], run: dict[str, Any]) -> dict[str, Any]:
-    """The ``findings.json`` document; its run part holds the result of the run (``result.py``)."""
+    """The ``findings.json`` document: the run (with its result, ``result.py``), the summary and each contract Finding."""
+    repository = run.get("repository") or {}
     part: dict[str, Any] = {
         "id": run.get("run_id"),
         "route": run.get("route"),
         "started_at": run.get("started_at"),
-        "repository": run.get("repository", {}).get("name"),
-        "files_counted": run.get("repository", {}).get("files_counted"),
+        "repository": repository.get("name"),
+        "files_counted": repository.get("files_counted"),
     }
     if isinstance(run.get("result"), dict):
         part["result"] = run["result"]
     return {
         "$schema": SCHEMA_URL,
         "schema_version": SCHEMA_VERSION,
-        "tool": {"name": "SentryTower", "version": __version__},
+        "tool": {"name": TOOL_NAME, "version": __version__},
         "run": part,
         "summary": {"findings": len(findings), "by_severity": severity_counts(findings)},
-        "findings": [finding.record() for finding in findings],
+        "findings": [finding.record(repository_target(run)) for finding in findings],
     }
+
+
+def repository_target(run: Mapping[str, Any]) -> Target | None:
+    """The contract Target of the audited repository: its folder name; None when the run has no name."""
+    name = _mapping(run.get("repository")).get("name")
+    return {"kind": "repository", "locator": name} if isinstance(name, str) and name else None
 
 
 def at_or_above(findings: Iterable[OutputFinding], threshold: str) -> list[OutputFinding]:
     """The findings with a severity at or above ``threshold`` (critical, high, medium or low).
 
-    A finding without a known severity counts as medium.
+    The order is the contract's severity rank. A finding without a known
+    severity counts as medium.
     """
-    limit = SEVERITY_ORDER[threshold]
-    return [finding for finding in findings if SEVERITY_ORDER["medium" if finding.severity == "unknown" else finding.severity] <= limit]
+    limit = severity_rank(severity_from_cli(threshold))
+    return [
+        finding
+        for finding in findings
+        if severity_rank("medium" if (level := severity_from_cli(finding.severity)) == "unknown" else level) <= limit
+    ]

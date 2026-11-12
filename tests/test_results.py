@@ -389,8 +389,8 @@ def test_a_finding_whose_verification_failed_stays_with_a_label(rig, write_repo)
     free = [finding for finding in outcome.findings if finding.engine == "free-roaming"]
     assert free and free[0].verification_status == "none"
     document = json.loads((rig.base / "out" / "findings.json").read_text())
-    entry = next(item for item in document["findings"] if item["engine"] == "deep-check")
-    assert entry["verification"]["status"] == "unverified" and entry["verification"]["reason"] == "the verification call failed"
+    entry = next(item for item in document["findings"] if item["engine"]["mode"] == "deep-check")
+    assert entry["evidence"] == {"class": "suspected", "verification": {"status": "unverified", "reason": "the verification call failed"}}
     assert "- Verification: unverified: the verification call failed" in (rig.base / "out" / "report.md").read_text()
     assert "unverified: the verification call failed" in (rig.base / "out" / "report.html").read_text()
     sarif = json.loads((rig.base / "out" / "findings.sarif").read_text())

@@ -70,7 +70,8 @@ the measured run, and the effect of these checks on the findings is not yet
 measured. The findings of the standard selection come first, by the same
 rule as at $2. The further findings are tier 2: they come after the others,
 under the preview label, in `report.md`, `report.html` and the result
-screen, and with `"tier": 2` in `findings.json` and the SARIF properties.
+screen, and with the property `"tier": 2` in `findings.json` and in the SARIF
+properties.
 
 ### Why did my run exit with code 4?
 

@@ -1,0 +1,316 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "SentryTower",
+          "semanticVersion": "<version>",
+          "version": "<version>",
+          "informationUri": "https://github.com/National-Compute/sentrytower",
+          "rules": [
+            {
+              "id": "CWE-22",
+              "name": "PathTraversal",
+              "shortDescription": {
+                "text": "Path Traversal"
+              },
+              "fullDescription": {
+                "text": "Path Traversal (CWE-22)"
+              },
+              "helpUri": "https://cwe.mitre.org/data/definitions/22.html",
+              "help": {
+                "text": "Path Traversal. See https://cwe.mitre.org/data/definitions/22.html."
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "external/cwe/cwe-22"
+                ],
+                "security-severity": "8.0",
+                "precision": "medium",
+                "problem.severity": "error"
+              }
+            },
+            {
+              "id": "CWE-78",
+              "name": "OsCommandInjection",
+              "shortDescription": {
+                "text": "OS Command Injection"
+              },
+              "fullDescription": {
+                "text": "OS Command Injection (CWE-78)"
+              },
+              "helpUri": "https://cwe.mitre.org/data/definitions/78.html",
+              "help": {
+                "text": "OS Command Injection. See https://cwe.mitre.org/data/definitions/78.html."
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "external/cwe/cwe-78"
+                ],
+                "security-severity": "9.5",
+                "precision": "medium",
+                "problem.severity": "error"
+              }
+            },
+            {
+              "id": "SENTRYTOWER-UNCLASSIFIED",
+              "name": "UnclassifiedVulnerability",
+              "shortDescription": {
+                "text": "Unclassified vulnerability"
+              },
+              "fullDescription": {
+                "text": "Unclassified vulnerability"
+              },
+              "helpUri": "https://github.com/National-Compute/sentrytower/blob/main/docs/output-format.md",
+              "help": {
+                "text": "Unclassified vulnerability. See https://github.com/National-Compute/sentrytower/blob/main/docs/output-format.md."
+              },
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "properties": {
+                "tags": [
+                  "security"
+                ],
+                "security-severity": "3.0",
+                "precision": "medium",
+                "problem.severity": "warning"
+              }
+            }
+          ]
+        }
+      },
+      "automationDetails": {
+        "id": "sentrytower/"
+      },
+      "originalUriBaseIds": {
+        "%SRCROOT%": {
+          "description": {
+            "text": "The root of the audited repository."
+          }
+        }
+      },
+      "results": [
+        {
+          "ruleId": "CWE-22",
+          "ruleIndex": 0,
+          "level": "error",
+          "message": {
+            "text": "Path traversal in read\n\n`open(os.path.join(BASE, name))`\n\nExploit conditions: ../ in the name."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "services/api/files.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 51,
+                  "endLine": 53
+                }
+              },
+              "message": {
+                "text": "open"
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "sentrytowerFindingHash/v1": "c37f70f0ad0617cbd6d6b15aa9435059"
+          },
+          "properties": {
+            "rank": 1,
+            "route": "funnel",
+            "tier": 1,
+            "id": "ST-001",
+            "severity": "high",
+            "security-severity": "8.0",
+            "cwe": [
+              "CWE-22"
+            ],
+            "engine": "free-roaming",
+            "verification": "none",
+            "nationalcompute/finding": {
+              "kind": "code",
+              "title": "Path traversal in read",
+              "engine": {
+                "name": "SentryTower",
+                "version": "<version>",
+                "mode": "free-roaming"
+              },
+              "ruleId": "CWE-22",
+              "evidence": {
+                "class": "suspected",
+                "verification": {
+                  "status": "none"
+                }
+              },
+              "target": {
+                "kind": "repository",
+                "locator": "webapp"
+              }
+            }
+          }
+        },
+        {
+          "ruleId": "CWE-78",
+          "ruleIndex": 1,
+          "level": "error",
+          "message": {
+            "text": "Command injection | in ping\n\nThe host goes to the shell."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "services/api/app.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 60,
+                  "endLine": 60
+                }
+              }
+            }
+          ],
+          "relatedLocations": [
+            {
+              "id": 1,
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "services/api/app.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 57,
+                  "endLine": 59
+                }
+              },
+              "message": {
+                "text": "the route"
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "sentrytowerFindingHash/v1": "11fc1767c6c75dc0cae94dd615e830b1"
+          },
+          "properties": {
+            "rank": 2,
+            "route": "funnel",
+            "tier": 1,
+            "id": "ST-002",
+            "severity": "critical",
+            "security-severity": "9.5",
+            "cwe": [
+              "CWE-78",
+              "CWE-77"
+            ],
+            "engine": "deep-check",
+            "verification": "verified",
+            "confidence": 0.82,
+            "nationalcompute/finding": {
+              "kind": "code",
+              "title": "Command injection | in ping",
+              "engine": {
+                "name": "SentryTower",
+                "version": "<version>",
+                "mode": "deep-check"
+              },
+              "ruleId": "CWE-78",
+              "evidence": {
+                "class": "defective",
+                "verification": {
+                  "status": "verified",
+                  "method": "blind-vote",
+                  "outcome": "supports",
+                  "score": 0.82
+                }
+              },
+              "target": {
+                "kind": "repository",
+                "locator": "webapp"
+              }
+            }
+          }
+        },
+        {
+          "ruleId": "SENTRYTOWER-UNCLASSIFIED",
+          "ruleIndex": 2,
+          "level": "note",
+          "message": {
+            "text": "Unclassified issue\n\ne\n\nExploit conditions: c"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "services/api/lib/x.js",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 4,
+                  "endLine": 4
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "sentrytowerFindingHash/v1": "b56d563fbf695f72841e513fcc7a485f"
+          },
+          "properties": {
+            "rank": 3,
+            "route": "funnel",
+            "tier": 1,
+            "id": "ST-003",
+            "severity": "low",
+            "security-severity": "3.0",
+            "cwe": [],
+            "engine": "deep-check",
+            "verification": "verified",
+            "confidence": 0.4,
+            "nationalcompute/finding": {
+              "kind": "code",
+              "title": "Unclassified issue",
+              "engine": {
+                "name": "SentryTower",
+                "version": "<version>",
+                "mode": "deep-check"
+              },
+              "evidence": {
+                "class": "suspected",
+                "verification": {
+                  "status": "verified",
+                  "method": "blind-vote",
+                  "outcome": "inconclusive",
+                  "score": 0.4
+                }
+              },
+              "target": {
+                "kind": "repository",
+                "locator": "webapp"
+              }
+            }
+          }
+        }
+      ],
+      "properties": {
+        "route": "funnel",
+        "filesCounted": 412,
+        "findingsWithoutLocation": 1,
+        "models": {
+          "unit_check": "z-ai/glm-5.3-flash"
+        }
+      }
+    }
+  ]
+}

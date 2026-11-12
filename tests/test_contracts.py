@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import io
+import json
 import re
 import sys
 import tarfile
@@ -156,3 +157,9 @@ def test_a_release_that_fails_a_check_changes_nothing(tmp_path: Path, defect: st
     assert vendor.main([str(bundle), "--dest", str(dest)]) == 1
     assert sorted(path.name for path in dest.iterdir()) == ["keep.txt"]
     assert "vendor_contracts:" in capsys.readouterr().err
+
+
+def test_the_findings_schema_names_the_contract_finding() -> None:
+    schema = json.loads((ROOT / "src" / "sentrytower" / "schemas" / "findings-v2.schema.json").read_text(encoding="utf-8"))
+    assert {"$ref": FINDING_SCHEMA_ID} in schema["properties"]["findings"]["items"]["allOf"]
+    assert not (ROOT / "src" / "sentrytower" / "schemas" / "findings-v1.schema.json").exists()

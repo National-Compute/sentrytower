@@ -220,23 +220,44 @@ def write_outputs(folder: Path, run_result: dict[str, Any] | None, findings: lis
         record["result"] = run_result
     (folder / "run.json").write_text(json.dumps(record | run))
     counts = {name: sum(1 for item in findings if item["severity"] == name) for name in ("critical", "high", "medium", "low", "unknown")}
-    document = {"run": {"route": "funnel"}, "summary": {"findings": len(findings), "by_severity": counts}, "findings": findings}
+    document = {
+        "schema_version": "2.0.0" if not findings or "properties" in findings[0] else "1.0.0",
+        "run": {"route": "funnel"},
+        "summary": {"findings": len(findings), "by_severity": counts},
+        "findings": findings,
+    }
     (folder / "findings.json").write_text(json.dumps(document))
     for name in ("findings.sarif", "report.md", "report.html"):
         (folder / name).write_text("{}")
     return folder
 
 
-def finding(title: str = TITLE, severity: str = "high", path: str = PATH, **changes: Any) -> dict[str, Any]:
-    value = {
+def finding(
+    title: str = TITLE, severity: str = "high", path: str = PATH, *, tier: int = 1, verification: str = "verified"
+) -> dict[str, Any]:
+    """A finding of findings.json, version 2: a contract Finding."""
+    return {
+        "title": title,
+        "severity": severity,
+        "description": "The query joins the user name into the SQL text.",
+        "evidence": {"class": "suspected", "verification": {"status": verification}},
+        "location": {"path": path, "startLine": 42, "endLine": 44},
+        "properties": {"rank": 1, "route": "funnel", "tier": tier},
+    }
+
+
+def finding_of_version_1(
+    title: str = TITLE, severity: str = "high", path: str = PATH, *, tier: int = 1, verification: str = "verified"
+) -> dict[str, Any]:
+    """A finding of findings.json, version 1: what the image of SentryTower 0.1 writes."""
+    return {
         "title": title,
         "severity": severity,
         "location": {"path": path, "start_line": 42, "end_line": 44},
         "evidence": "The query joins the user name into the SQL text.",
-        "tier": 1,
-        "verification": "verified",
+        "tier": tier,
+        "verification": {"verdict": None, "keep_score": None, "status": verification, "reason": None},
     }
-    return value | changes
 
 
 def report(
@@ -270,6 +291,18 @@ def test_the_report_of_a_private_repository_lists_the_findings(tmp_path: Path) -
     assert "SQL injection in the login form" in summary and "app/db\\.py:42\\-44" in summary
     assert "unverified; second tier" in summary and "| Depth |" not in summary
     assert "::notice title=SentryTower::complete: 2 finding(s)" in process.stdout
+
+
+def test_the_report_reads_findings_json_of_version_1(tmp_path: Path) -> None:
+    """The Action pulls the image of its own release unless the input image names another, which can write version 1."""
+    findings = [
+        finding_of_version_1(),
+        finding_of_version_1("Path traversal in the download route", "medium", "app/files.py", tier=2, verification="unverified"),
+    ]
+    out = write_outputs(tmp_path / "out", result(), findings)
+    _, values, summary = report(tmp_path, out, 0, details=True)
+    assert values["count"] == "2" and "| Findings | 2: 0 critical, 1 high, 1 medium, 0 low, 0 unknown |" in summary
+    assert "app/db\\.py:42\\-44" in summary and "app/files\\.py:42\\-44 | unverified; second tier |" in summary
 
 
 def test_the_report_of_a_public_repository_shows_counts_only(tmp_path: Path) -> None:

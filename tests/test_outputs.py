@@ -1,14 +1,25 @@
-"""The output files: findings.json against its JSON Schema, SARIF 2.1.0 against the OASIS schema, the report."""
+"""The output files: findings.json against its JSON Schema and the data contracts, SARIF 2.1.0, the report.
+
+``tests/data/golden-findings.json`` and ``golden-findings.sarif`` hold the
+outputs of the findings below. A change of them is a change of the public
+output format: say so in the change log, then rewrite them with
+``.venv/bin/python tests/test_outputs.py``.
+"""
 
 from __future__ import annotations
 
+import copy
 import json
+import re
 from pathlib import Path
+from typing import Any
 
 import jsonschema
 import pytest
 
+from sentrytower import __version__
 from sentrytower.audit import write_outputs
+from sentrytower.contracts.nc_contracts import findings_from_sarif_log
 from sentrytower.findings import (
     ENGINE_AGENT,
     ENGINE_DEEP,
@@ -17,13 +28,16 @@ from sentrytower.findings import (
     OutputLocation,
     at_or_above,
     findings_document,
+    from_contract,
 )
 from sentrytower.html_report import html_report, rich_text
 from sentrytower.report import markdown_report
 from sentrytower.sarif import UNCLASSIFIED, sarif_document
 
+ROOT = Path(__file__).resolve().parents[1]
 DATA = Path(__file__).resolve().parent / "data"
-SCHEMA = Path(__file__).resolve().parents[1] / "src" / "sentrytower" / "schemas" / "findings-v1.schema.json"
+GOLDEN_FINDINGS = DATA / "golden-findings.json"
+GOLDEN_SARIF = DATA / "golden-findings.sarif"
 RUN = {
     "run_id": "0" * 32,
     "route": "funnel",
@@ -61,6 +75,7 @@ def findings() -> list[OutputFinding]:
             route="funnel",
             confidence=0.82,
             verification={"verdict": "exploitable", "keep_score": 0.82},
+            verification_status="verified",
         ),
         OutputFinding(
             rank=3,
@@ -74,6 +89,7 @@ def findings() -> list[OutputFinding]:
             route="funnel",
             confidence=0.4,
             verification={"verdict": "unclear", "keep_score": 0.4},
+            verification_status="verified",
         ),
         OutputFinding(
             rank=4,
@@ -89,17 +105,181 @@ def findings() -> list[OutputFinding]:
     ]
 
 
-def test_findings_json_follows_its_schema() -> None:
+def test_findings_json_follows_its_schema_and_the_contract(findings_validator: jsonschema.Draft202012Validator) -> None:
     document = findings_document(findings(), RUN)
-    schema = json.loads(SCHEMA.read_text())
-    jsonschema.Draft202012Validator.check_schema(schema)
-    jsonschema.Draft202012Validator(schema).validate(document)
-    first = document["findings"][1]
-    assert first["location"] == {"path": "app.py", "start_line": 60, "end_line": 60}
-    assert first["related_locations"] == [{"path": "app.py", "start_line": 57, "end_line": 59, "note": "the route"}]
-    assert first["engine"] == "deep-check" and first["route"] == "funnel" and first["confidence"] == 0.82
-    assert first["fingerprint"].startswith("sha256:") and document["summary"]["by_severity"]["critical"] == 1
-    assert document["findings"][3]["location"] is None
+    findings_validator.validate(document)
+    assert document["schema_version"] == "2.0.0" and document["summary"]["by_severity"]["critical"] == 1
+    command = document["findings"][1]
+    assert command["id"] == "ST-002" and command["kind"] == "code" and command["severity"] == "critical"
+    assert command["location"] == {"path": "app.py", "startLine": 60, "endLine": 60}
+    assert command["relatedLocations"] == [{"path": "app.py", "startLine": 57, "endLine": 59, "note": "the route"}]
+    assert command["engine"] == {"name": "SentryTower", "version": __version__, "mode": "deep-check"}
+    assert command["evidence"] == {
+        "class": "defective",
+        "verification": {"status": "verified", "method": "blind-vote", "outcome": "supports", "score": 0.82},
+    }
+    assert command["properties"] == {"rank": 2, "route": "funnel", "tier": 1} and command["ruleId"] == "CWE-78"
+    assert command["fingerprint"]["scheme"] == "sentrytowerFindingHash/v1" and re.fullmatch(
+        r"[0-9a-f]{32}", command["fingerprint"]["value"]
+    )
+    assert command["target"] == {"kind": "repository", "locator": "webapp"} and command["description"] == "The host goes to the shell."
+    traversal = document["findings"][0]
+    assert traversal["description"] == "`open(os.path.join(BASE, name))`\n\nExploit conditions: ../ in the name."
+    assert traversal["evidence"] == {"class": "suspected", "verification": {"status": "none"}}
+    assert traversal["location"] == {"path": "files.py", "startLine": 51, "endLine": 53, "note": "open"}
+    unclassified, nowhere = document["findings"][2], document["findings"][3]
+    assert "ruleId" not in unclassified and unclassified["cwe"] == [] and unclassified["evidence"]["class"] == "suspected"
+    assert "location" not in nowhere and "relatedLocations" not in nowhere and nowhere["severity"] == "unknown"
+
+
+def test_the_fingerprint_keeps_the_digest_of_version_1() -> None:
+    """Version 1 wrote ``sha256:`` and the same 32 hex digits, so a history of fingerprints across runs carries over."""
+    (record,) = findings_document(findings()[1:2], RUN)["findings"]
+    assert record["fingerprint"]["value"] == "11fc1767c6c75dc0cae94dd615e830b1"
+
+
+VERIFIED = {"status": "verified", "method": "blind-vote"}
+
+
+@pytest.mark.parametrize(
+    ("verification", "status", "reason", "evidence"),
+    [
+        (
+            {"verdict": "exploitable", "keep_score": 0.9},
+            "verified",
+            None,
+            {"class": "defective", "verification": {**VERIFIED, "outcome": "supports", "score": 0.9}},
+        ),
+        (
+            {"verdict": "safe", "keep_score": 0.1},
+            "verified",
+            None,
+            {"class": "suspected", "verification": {**VERIFIED, "outcome": "refutes", "score": 0.1}},
+        ),
+        (
+            {"verdict": "unclear", "keep_score": 0.5},
+            "verified",
+            None,
+            {"class": "suspected", "verification": {**VERIFIED, "outcome": "inconclusive", "score": 0.5}},
+        ),
+        # Only a verified majority makes a finding defective.
+        (
+            {"verdict": "exploitable", "keep_score": 0.9},
+            "unverified",
+            "the run stopped first",
+            {
+                "class": "suspected",
+                "verification": {
+                    "status": "unverified",
+                    "method": "blind-vote",
+                    "outcome": "supports",
+                    "score": 0.9,
+                    "reason": "the run stopped first",
+                },
+            },
+        ),
+        (
+            None,
+            "unverified",
+            "the verification call failed",
+            {"class": "suspected", "verification": {"status": "unverified", "reason": "the verification call failed"}},
+        ),
+        (None, "none", None, {"class": "suspected", "verification": {"status": "none"}}),
+        # A score outside 0 to 1 is left out.
+        (
+            {"verdict": "exploitable", "keep_score": 7.0},
+            "verified",
+            None,
+            {"class": "defective", "verification": {**VERIFIED, "outcome": "supports"}},
+        ),
+    ],
+)
+def test_the_evidence_class_follows_the_blind_verification(
+    verification: dict[str, Any] | None, status: str, reason: str | None, evidence: dict[str, Any]
+) -> None:
+    finding = OutputFinding(
+        rank=1,
+        title="t",
+        severity="high",
+        cwe=["CWE-89"],
+        locations=[OutputLocation("db.py", 1, 2)],
+        evidence="e",
+        exploit_conditions="",
+        engine=ENGINE_DEEP,
+        route="funnel",
+        confidence=(verification or {}).get("keep_score"),
+        verification=verification,
+        verification_status=status,
+        verification_reason=reason,
+    )
+    assert finding.record()["evidence"] == evidence
+
+
+def test_the_votes_of_a_slice_finding_are_a_property(findings_validator: jsonschema.Draft202012Validator) -> None:
+    votes = ["exploitable", "exploitable", "safe"]
+    finding = OutputFinding(
+        rank=7,
+        title="IDOR in the order view",
+        severity="medium",
+        cwe=["CWE-639"],
+        locations=[OutputLocation("api/orders.js", 12, 18)],
+        evidence="e",
+        exploit_conditions="c",
+        engine=ENGINE_AGENT,
+        route="agent",
+        tier=2,
+        confidence=0.7,
+        verification={"verdict": "exploitable", "keep_score": 0.7, "votes": votes},
+        verification_status="verified",
+    )
+    document = findings_document([finding], {**RUN, "route": "agent"})
+    findings_validator.validate(document)
+    (record,) = document["findings"]
+    assert record["properties"] == {"rank": 7, "route": "agent", "tier": 2, "votes": votes} and record["evidence"]["class"] == "defective"
+    (result,) = sarif_document([finding], RUN)["runs"][0]["results"]
+    assert result["properties"]["votes"] == votes and result["properties"]["tier"] == 2
+
+
+def test_the_schema_refuses_what_the_cli_never_writes(findings_validator: jsonschema.Draft202012Validator) -> None:
+    document = findings_document(findings(), RUN)
+    for change in (
+        lambda item: item["evidence"].update({"class": "reproduced"}),
+        lambda item: item.update({"severity": "severe"}),
+        lambda item: item["fingerprint"].update({"value": "sha256:" + item["fingerprint"]["value"]}),
+        lambda item: item["engine"].update({"mode": "swarm"}),
+        lambda item: item.pop("evidence"),
+        lambda item: item["properties"].pop("rank"),
+        lambda item: item["location"].update({"startLine": 0}),
+        lambda item: item.update({"cwe": ["CWE-089"]}),
+    ):
+        broken = copy.deepcopy(document)
+        change(broken["findings"][0])
+        assert not findings_validator.is_valid(broken)
+
+
+def test_a_finding_of_findings_json_reads_back_as_it_was_written() -> None:
+    for position, original in enumerate(findings(), 1):
+        record = original.record()
+        assert from_contract(record, position=position).record() == record
+    # A field of the wrong type takes its default: a file that another program changed cannot stop `sentrytower last`.
+    junk = from_contract(
+        {
+            "title": 3,
+            "severity": "severe",
+            "location": {"path": "a.py", "startLine": "x"},
+            "evidence": {"verification": "x"},
+            "properties": [],
+        },
+        position=4,
+    )
+    assert (junk.rank, junk.title, junk.severity, junk.location, junk.verification_status) == (
+        4,
+        "",
+        "unknown",
+        OutputLocation("a.py", 1, 1),
+        "none",
+    )
+    assert from_contract({"severity": "info", "relatedLocations": "x"}).severity == "low"
 
 
 def test_the_sarif_log_is_valid_sarif_2_1_0() -> None:
@@ -123,6 +303,52 @@ def test_the_sarif_log_is_valid_sarif_2_1_0() -> None:
     }
     assert command["relatedLocations"][0]["message"]["text"] == "the route"
     assert results[2]["level"] == "note" and run["automationDetails"]["id"] == "sentrytower/"
+    # The flat properties are those of version 1; the contract fields that SARIF has no place for are in one property.
+    assert set(command["properties"]) == {
+        "id", "rank", "severity", "security-severity", "cwe", "engine", "route", "tier", "verification", "confidence", "nationalcompute/finding",
+    }  # fmt: skip
+    assert command["properties"]["engine"] == "deep-check" and command["properties"]["verification"] == "verified"
+    assert command["partialFingerprints"] == {"sentrytowerFindingHash/v1": "11fc1767c6c75dc0cae94dd615e830b1"}
+    assert command["properties"]["nationalcompute/finding"]["evidence"]["class"] == "defective"
+
+
+@pytest.mark.parametrize("prefix", ["", "services/api"])
+def test_each_sarif_result_gives_back_its_finding_of_findings_json(prefix: str) -> None:
+    """The SARIF mapping of the contracts reads each result back as the finding of findings.json, its paths from the repository root."""
+    document = findings_document(findings(), RUN)
+    expected = []
+    for item in copy.deepcopy(document["findings"]):
+        if "location" not in item:
+            continue
+        for location in [item["location"], *item.get("relatedLocations", [])]:
+            location["path"] = f"{prefix}/{location['path']}" if prefix else location["path"]
+        expected.append(item)
+    assert findings_from_sarif_log(sarif_document(findings(), RUN, path_prefix=prefix)) == expected
+
+
+def test_a_path_with_spaces_and_percent_signs_survives_the_sarif_round_trip() -> None:
+    finding = OutputFinding(
+        rank=1,
+        title="XSS in the page",
+        severity="medium",
+        cwe=["CWE-79"],
+        locations=[
+            OutputLocation("web/my page%20.js", 3, 4),
+            OutputLocation("../outside.js", 1, 1),
+            OutputLocation("web/ok.js", 9, 9, "the sink"),
+        ],
+        evidence="e",
+        exploit_conditions="",
+        engine=ENGINE_FREE,
+        route="funnel",
+    )
+    log = sarif_document([finding], RUN)
+    (result,) = log["runs"][0]["results"]
+    assert result["locations"][0]["physicalLocation"]["artifactLocation"]["uri"] == "web/my%20page%2520.js"
+    (back,) = findings_from_sarif_log(log)
+    # A related location outside the repository is not in SARIF; findings.json keeps it.
+    assert back["location"]["path"] == "web/my page%20.js" and [item["path"] for item in back["relatedLocations"]] == ["web/ok.js"]
+    assert len(findings_document([finding], RUN)["findings"][0]["relatedLocations"]) == 2
 
 
 def test_the_report_has_a_table_and_the_details() -> None:
@@ -192,3 +418,67 @@ def test_the_html_report_of_a_run_without_findings_and_of_a_failed_run() -> None
 def test_rich_text_never_lets_markup_through() -> None:
     text = rich_text("<img src=x onerror=alert(1)> `<b>` **<i>** [link](javascript:alert(1))")
     assert "<img" not in text and "<b>" not in text and "<i>" not in text and "href" not in text
+
+
+def golden_outputs() -> dict[Path, str]:
+    """findings.json and findings.sarif (of an audit of a subfolder) of the findings above; the version of SentryTower is ``<version>``."""
+    outputs = {
+        GOLDEN_FINDINGS: findings_document(findings(), RUN),
+        GOLDEN_SARIF: sarif_document(findings(), RUN, path_prefix="services/api"),
+    }
+    return {
+        path: json.dumps(value, indent=2, ensure_ascii=False).replace(f'"{__version__}"', '"<version>"') + "\n"
+        for path, value in outputs.items()
+    }
+
+
+def test_the_outputs_are_the_golden_outputs() -> None:
+    for path, text in golden_outputs().items():
+        assert path.read_text(encoding="utf-8") == text, f"{path.name} changed (see the docstring of this module)"
+
+
+def test_the_documented_example_is_what_sentrytower_writes(findings_validator: jsonschema.Draft202012Validator) -> None:
+    text = (ROOT / "docs" / "output-format.md").read_text(encoding="utf-8").split("## findings.json\n", 1)[1]
+    example = json.loads(text.split("```json\n", 1)[1].split("```", 1)[0])
+    findings_validator.validate(example)
+    run = {
+        "run_id": example["run"]["id"],
+        "route": "funnel",
+        "started_at": example["run"]["started_at"],
+        "repository": {"name": "webapp", "files_counted": 412},
+        "result": example["run"]["result"],
+    }
+    items = [
+        OutputFinding(
+            rank=1,
+            title="Command injection in ping",
+            severity="critical",
+            cwe=["CWE-78"],
+            locations=[OutputLocation("app.py", 60, 60), OutputLocation("app.py", 57, 59, "the route takes the host")],
+            evidence="The host parameter goes to os.system without a check.",
+            exploit_conditions="The attacker controls the host parameter.",
+            engine=ENGINE_FREE,
+            route="funnel",
+        ),
+        OutputFinding(
+            rank=2,
+            title="Path traversal in read",
+            severity="high",
+            cwe=["CWE-22"],
+            locations=[OutputLocation("files.py", 51, 53)],
+            evidence="open(os.path.join(BASE, name)) takes the name of the request.",
+            exploit_conditions="The attacker sends ../ in the name.",
+            engine=ENGINE_DEEP,
+            route="funnel",
+            confidence=0.84,
+            verification={"verdict": "exploitable", "keep_score": 0.84},
+            verification_status="verified",
+        ),
+    ]
+    assert findings_document(items, run) == example
+
+
+if __name__ == "__main__":
+    for path, text in golden_outputs().items():
+        path.write_text(text, encoding="utf-8")
+        print(f"wrote {path}")

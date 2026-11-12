@@ -1,21 +1,35 @@
 """The findings of a run as SARIF 2.1.0 (``findings.sarif``), ready for GitHub code scanning.
 
-- One run, with the tool ``SentryTower`` and one rule for each CWE of the
-  findings (``CWE-<n>``; ``SENTRYTOWER-UNCLASSIFIED`` for a finding without
-  a CWE). A rule has the tags ``security`` and ``external/cwe/cwe-<n>`` and a
-  ``security-severity`` (the highest severity of its findings in the run),
-  which GitHub shows as the severity of an alert.
-- One result for each finding with a location: the level (``error`` for
-  critical and high, ``warning`` for medium, ``note`` for low), the title
-  and the explanation as the message, the primary location relative to the
-  repository root (``%SRCROOT%``), the related locations, a partial
-  fingerprint, and the rank, the severity, the engine, the route, the tier
-  and the verification (``verified``, ``unverified`` with
-  ``verificationReason``, or ``none``) as properties. A finding without a location in the repository is counted
-  in the run properties; SARIF consumers need a location.
-- A path is a relative URI: percent-encoded, with an optional folder in
-  front (``path_prefix``) for the audit of a subfolder, because code
-  scanning reads each path from the root of the repository.
+Each result is the SARIF mapping of the data contracts
+(``contracts/nc_contracts/sarif.py``) applied to the contract Finding of
+the finding in ``findings.json``, so a reader of the contracts gets each
+finding back from its result:
+
+- the rule (the first CWE; ``SENTRYTOWER-UNCLASSIFIED`` for a finding
+  without a CWE), the level (``error`` for critical and high, ``warning``
+  for medium and unknown, ``note`` for low), the title and the
+  explanation as the message, the primary location and the related
+  locations with their notes, and the partial fingerprint
+  ``sentrytowerFindingHash/v1``;
+- the properties ``id``, ``severity``, ``security-severity``, ``cwe``,
+  ``engine``, ``verification`` (``verified``, ``unverified`` with
+  ``verificationReason``, or ``none``), ``confidence`` when the finding has
+  a verification score, ``rank``, ``route`` and ``tier``, and
+  ``nationalcompute/finding``: the fields of the Finding that SARIF has no
+  place for (the kind, the title, the engine, the rule, the evidence, the
+  target).
+
+This module adds what code scanning needs beyond the mapping:
+
+- one rule for each CWE of the findings, with a name, a help link, the
+  tags ``security`` and ``external/cwe/cwe-<n>`` and a ``security-severity``
+  (the highest severity of its findings in the run), which GitHub shows as
+  the severity of an alert;
+- a path relative to the repository root (``%SRCROOT%``), with an optional
+  folder in front (``path_prefix``) for the audit of a subfolder, because
+  code scanning reads each path from the root of the repository. A finding
+  without a location in the repository is counted in the run properties,
+  not reported: SARIF consumers need a location;
 - ``automationDetails.id`` is ``<category>/``: one code-scanning category
   for each audit, so that two audits of one repository keep their alerts.
 """
@@ -23,23 +37,19 @@
 from __future__ import annotations
 
 import posixpath
-import urllib.parse
+from dataclasses import replace
 from typing import Any
 
 from . import __version__
 from .config import PROJECT_URL
-from .findings import OutputFinding
+from .contracts.nc_contracts import finding_to_sarif_result, severity_from_cli, severity_to_security_severity
+from .contracts.nc_contracts.sarif import SARIF_SCHEMA, SARIF_VERSION, UNCLASSIFIED_RULE
+from .contracts.nc_contracts.types import Finding, Target
+from .findings import OutputFinding, repository_target
 
-SARIF_SCHEMA = "https://json.schemastore.org/sarif-2.1.0.json"
-SARIF_VERSION = "2.1.0"
 DEFAULT_CATEGORY = "sentrytower"
-# The characters of a path that stay as they are in a URI; the rest is percent-encoded.
-_URI_SAFE = "/!$&'()*+,;=@"
-UNCLASSIFIED = "SENTRYTOWER-UNCLASSIFIED"
-# GitHub reads security-severity as a CVSS-like number: 9.0 and more is critical,
-# 7.0 to 8.9 high, 4.0 to 6.9 medium, 0.1 to 3.9 low.
-SECURITY_SEVERITY = {"critical": 9.5, "high": 8.0, "medium": 5.5, "low": 3.0, "unknown": 5.5}
-LEVELS = {"critical": "error", "high": "error", "medium": "warning", "low": "note", "unknown": "warning"}
+UNCLASSIFIED = UNCLASSIFIED_RULE
+
 # The names of common weaknesses (MITRE CWE). A CWE that the table does not
 # name gets its identifier as its name.
 CWE_NAMES = {
@@ -133,33 +143,26 @@ def normalize_prefix(prefix: str) -> str:
     return folder + "/"
 
 
-def repository_uri(path: str, prefix: str = "") -> str | None:
-    """The relative URI of a repository path, or None for a path outside the repository."""
+def repository_path(path: str, prefix: str = "") -> str | None:
+    """The path from the repository root (``prefix`` in front), or None for a path outside the repository.
+
+    The SARIF mapping percent-encodes it as the URI of the location.
+    """
     text = path.strip().replace("\\", "/")
     if not text or text.startswith("/") or "\0" in text:
         return None
     normalized = posixpath.normpath(text)
     if normalized in (".", "..") or normalized.startswith("../"):
         return None
-    return urllib.parse.quote(prefix + normalized, safe=_URI_SAFE)
+    return prefix + normalized
 
 
-def _location(path: str, start: int, end: int, *, message: str | None = None, identifier: int | None = None) -> dict[str, Any]:
-    location: dict[str, Any] = {
-        "physicalLocation": {
-            "artifactLocation": {"uri": path, "uriBaseId": "%SRCROOT%"},
-            "region": {"startLine": start, "endLine": max(start, end)},
-        }
-    }
-    if identifier is not None:
-        location["id"] = identifier
-    if message:
-        location["message"] = {"text": message}
-    return location
+def _security_severity(finding: OutputFinding) -> float:
+    return float(severity_to_security_severity(severity_from_cli(finding.severity)))
 
 
 def _rule(identifier: str, findings: list[OutputFinding]) -> dict[str, Any]:
-    worst = max((SECURITY_SEVERITY.get(finding.severity, 5.5) for finding in findings), default=5.5)
+    worst = max((_security_severity(finding) for finding in findings), default=5.5)
     level = "error" if worst >= 7.0 else ("warning" if worst >= 4.0 else "note")
     if identifier == UNCLASSIFIED:
         name, tags = "Unclassified vulnerability", ["security"]
@@ -186,6 +189,24 @@ def _rule(identifier: str, findings: list[OutputFinding]) -> dict[str, Any]:
     }
 
 
+def _located(finding: OutputFinding, prefix: str, target: Target | None) -> Finding | None:
+    """The contract Finding of ``finding`` with its paths from the repository root; None without a location in it."""
+    first = finding.location
+    path = repository_path(first.path, prefix) if first else None
+    if first is None or path is None:
+        return None
+    record = finding.record(target)
+    record["location"] = replace(first, path=path).record()
+    related = [
+        replace(location, path=found).record() for location in finding.locations[1:] if (found := repository_path(location.path, prefix))
+    ]
+    if related:
+        record["relatedLocations"] = related
+    else:
+        record.pop("relatedLocations", None)
+    return record
+
+
 def sarif_document(
     findings: list[OutputFinding], run: dict[str, Any], *, category: str = DEFAULT_CATEGORY, path_prefix: str = ""
 ) -> dict[str, Any]:
@@ -196,48 +217,17 @@ def sarif_document(
     """
     prefix = normalize_prefix(path_prefix)
     automation = (category.strip().strip("/") or DEFAULT_CATEGORY) + "/"
-    located = [finding for finding in findings if finding.location is not None and repository_uri(finding.location.path, prefix)]
-    rule_ids = list(dict.fromkeys(rule_id(finding) for finding in located))
-    rules = [_rule(identifier, [finding for finding in located if rule_id(finding) == identifier]) for identifier in rule_ids]
+    target = repository_target(run)
+    located = [(finding, record) for finding in findings if (record := _located(finding, prefix, target)) is not None]
+    rule_ids = list(dict.fromkeys(rule_id(finding) for finding, _ in located))
+    rules = [_rule(identifier, [finding for finding, _ in located if rule_id(finding) == identifier]) for identifier in rule_ids]
     index = {identifier: position for position, identifier in enumerate(rule_ids)}
     results = []
-    for finding in located:
-        first = finding.location
-        assert first is not None
-        message = finding.title
-        if finding.explanation:
-            message = f"{finding.title}\n\n{finding.explanation}"
-        result: dict[str, Any] = {
-            "ruleId": rule_id(finding),
-            "ruleIndex": index[rule_id(finding)],
-            "level": LEVELS.get(finding.severity, "warning"),
-            "message": {"text": message},
-            "locations": [_location(repository_uri(first.path, prefix) or "", first.start_line, first.end_line)],
-            "partialFingerprints": {"sentrytowerFindingHash/v1": finding.fingerprint().removeprefix("sha256:")},
-            "properties": {
-                "id": finding.id,
-                "rank": finding.rank,
-                "severity": finding.severity,
-                "security-severity": f"{SECURITY_SEVERITY.get(finding.severity, 5.5):.1f}",
-                "cwe": list(finding.cwe),
-                "engine": finding.engine,
-                "route": finding.route,
-                "tier": finding.tier,
-                "verification": finding.verification_status,
-            },
-        }
-        if finding.confidence is not None:
-            result["properties"]["confidence"] = finding.confidence
-        if finding.verification_reason:
-            result["properties"]["verificationReason"] = finding.verification_reason
-        related = [
-            _location(uri, location.start_line, location.end_line, message=location.note, identifier=number)
-            for number, location in enumerate(finding.locations[1:], start=1)
-            if (uri := repository_uri(location.path, prefix))
-        ]
-        if related:
-            result["relatedLocations"] = related
-        results.append(result)
+    for _, record in located:
+        mapped = finding_to_sarif_result(record)
+        results.append(
+            {"ruleId": mapped["ruleId"], "ruleIndex": index[mapped["ruleId"]]} | {k: v for k, v in mapped.items() if k != "ruleId"}
+        )
     return {
         "$schema": SARIF_SCHEMA,
         "version": SARIF_VERSION,

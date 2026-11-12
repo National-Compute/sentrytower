@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/National-Compute/sentrytower/main/src/sentrytower/schemas/findings-v2.schema.json",
+  "title": "SentryTower findings",
+  "description": "The findings of one SentryTower run (findings.json). Version 2.x of the format: a minor version adds optional fields only. Each finding is a Finding of the National Compute data contracts, version 1 (https://nationalcompute.io/schemas/finding/1.json, vendored in src/sentrytower/contracts/schemas/finding/1.json), with the guarantees of $defs/sentrytowerFinding.",
+  "type": "object",
+  "required": ["schema_version", "tool", "run", "summary", "findings"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schema_version": {"type": "string", "pattern": "^2\\.[0-9]+\\.[0-9]+$"},
+    "tool": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"const": "SentryTower"},
+        "version": {"type": "string"}
+      }
+    },
+    "run": {
+      "type": "object",
+      "required": ["id", "route"],
+      "properties": {
+        "id": {"type": ["string", "null"]},
+        "route": {"enum": ["funnel", "agent"], "description": "The engine that the size rule selected: funnel (1,000 files or fewer) or agent (more)."},
+        "started_at": {"type": ["string", "null"]},
+        "repository": {"type": ["string", "null"], "description": "The name of the repository folder."},
+        "files_counted": {"type": ["integer", "null"], "minimum": 0},
+        "result": {
+          "type": "object",
+          "description": "The result of the run, as in run.json (status, stop_reason, stop_text, failure, spent_usd, cap_usd, units, calls, depth_factor, preview).",
+          "properties": {
+            "status": {"enum": ["complete", "incomplete", "failed", "interrupted"]},
+            "stop_reason": {"enum": ["done", "budget", "token-ceiling", "wall-clock", "provider-error", "engine-error", "interrupted"]},
+            "stop_text": {"type": "string"},
+            "failure": {"type": ["string", "null"]},
+            "spent_usd": {"type": ["number", "null"], "minimum": 0},
+            "cap_usd": {"type": ["number", "null"], "minimum": 0},
+            "units": {"type": "object"},
+            "calls": {"type": "object"},
+            "depth_factor": {"type": "number", "minimum": 1},
+            "preview": {"type": "boolean"}
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["findings", "by_severity"],
+      "properties": {
+        "findings": {"type": "integer", "minimum": 0},
+        "by_severity": {
+          "type": "object",
+          "description": "The count of each severity that SentryTower gives; the contract's info never occurs.",
+          "required": ["critical", "high", "medium", "low", "unknown"],
+          "additionalProperties": {"type": "integer", "minimum": 0}
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "description": "The findings in rank order.",
+      "items": {
+        "allOf": [
+          {"$ref": "https://nationalcompute.io/schemas/finding/1.json"},
+          {"$ref": "#/$defs/sentrytowerFinding"}
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "sentrytowerFinding": {
+      "description": "What SentryTower guarantees beyond the contract Finding.",
+      "type": "object",
+      "required": ["id", "evidence", "cwe", "properties"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^ST-[0-9]{3,}$", "description": "ST-001, ST-002, ... in rank order: unique in the run, not across runs."},
+        "fingerprint": {
+          "type": "object",
+          "properties": {
+            "scheme": {"const": "sentrytowerFindingHash/v1"},
+            "value": {"type": "string", "pattern": "^[0-9a-f]{32}$", "description": "32 hex digits of SHA-256 over the file, the first CWE and the title words."}
+          }
+        },
+        "kind": {"const": "code"},
+        "title": {"type": "string", "maxLength": 300},
+        "severity": {"enum": ["critical", "high", "medium", "low", "unknown"]},
+        "evidence": {
+          "type": "object",
+          "required": ["verification"],
+          "properties": {
+            "class": {
+              "enum": ["defective", "suspected"],
+              "description": "The blind verification never executes a claim: defective when a verified majority called the finding exploitable, else suspected."
+            }
+          }
+        },
+        "engine": {
+          "type": "object",
+          "required": ["name", "version", "mode"],
+          "properties": {
+            "name": {"const": "SentryTower"},
+            "mode": {
+              "enum": ["free-roaming", "deep-check", "single-agent"],
+              "description": "free-roaming: the agent session of the funnel on the whole repository; deep-check: an agent session of the funnel on one code unit; single-agent: the agent of the agent route."
+            }
+          }
+        },
+        "relatedLocations": {"type": "array", "maxItems": 3},
+        "properties": {
+          "type": "object",
+          "required": ["rank", "route", "tier"],
+          "properties": {
+            "rank": {"type": "integer", "minimum": 1, "description": "The place of the finding in the ranked output of the run."},
+            "route": {"enum": ["funnel", "agent"]},
+            "tier": {
+              "enum": [1, 2],
+              "description": "1 for the findings of the standard run; 2 for further findings of a deeper run (preview: more checks; effect on findings not yet measured)."
+            },
+            "votes": {
+              "type": "array",
+              "items": {"type": ["string", "null"]},
+              "description": "The verdicts of the three votes of a verified slice finding of the agent route."
+            }
+          }
+        }
+      }
+    }
+  }
+}
