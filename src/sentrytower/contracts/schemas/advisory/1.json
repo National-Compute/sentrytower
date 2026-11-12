@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nationalcompute.io/schemas/advisory/1.json",
+  "title": "Advisory",
+  "description": "One vulnerability advisory, as an OSV record: id, aliases, affected packages (purl and version ranges), severity and references. GHSA and NVD records are converted to OSV before they enter. The OSV schema is a pinned copy of release v1.9.2 of github.com/ossf/osv-schema (commit c8a57bdc5b0bc54646e140cabbb7834bd0b5aec9), licensed Apache-2.0; see NOTICE.",
+  "$ref": "../vendor/osv-schema/v1.9.2/schema.json"
+}

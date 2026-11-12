@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nationalcompute.io/schemas/evidence-record/1.json",
+  "title": "EvidenceRecord",
+  "description": "The complete record of one advisory or one finding, from arrival to closure: the subject, its exposures, the events of the work in sequence order, the artifacts that the events cite by digest, and the observation that closed it. Candidates, approvals, decisions and releases are the payloads of the events. It exports to CycloneDX 1.6 VEX (one vulnerability analysis for each exposure) and to NDJSON (one event on each line).",
+  "type": "object",
+  "required": ["subject", "state", "generatedAt", "events", "artifacts"],
+  "properties": {
+    "subject": { "$ref": "#/$defs/subject" },
+    "state": {
+      "description": "`closed` when every exposure is closed, or when the finding is fixed or decided.",
+      "type": "string",
+      "enum": ["open", "closed"]
+    },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "advisory": { "$ref": "../advisory/1.json" },
+    "finding": { "$ref": "../finding/1.json" },
+    "exposures": {
+      "type": "array",
+      "items": { "$ref": "../exposure/1.json" }
+    },
+    "events": {
+      "type": "array",
+      "items": { "$ref": "../run-event/1.json" }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/artifact" }
+    },
+    "closingObservation": {
+      "description": "The running observation of the fixed artifact that closed the last exposure. Absent when a decision or a rule closed it, or while it is open.",
+      "$ref": "../observation/1.json"
+    }
+  },
+  "$defs": {
+    "subject": {
+      "title": "EvidenceSubject",
+      "description": "The advisory or the finding that the record is about.",
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["advisory", "finding"] },
+        "advisory": { "type": "string", "minLength": 1 },
+        "finding": { "$ref": "../finding/1.json#/$defs/fingerprint" }
+      },
+      "allOf": [
+        {
+          "if": { "required": ["kind"], "properties": { "kind": { "const": "advisory" } } },
+          "then": { "required": ["advisory"] }
+        },
+        {
+          "if": { "required": ["kind"], "properties": { "kind": { "const": "finding" } } },
+          "then": { "required": ["finding"] }
+        }
+      ]
+    },
+    "artifact": {
+      "title": "EvidenceArtifact",
+      "description": "A file that the record cites, by digest: a build log, a diff, an SBOM, a receipt.",
+      "type": "object",
+      "required": ["name", "sha256"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "mediaType": { "type": "string", "minLength": 1 },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "bytes": { "type": "integer", "minimum": 0 },
+        "uri": { "type": "string", "format": "uri-reference" }
+      }
+    }
+  }
+}

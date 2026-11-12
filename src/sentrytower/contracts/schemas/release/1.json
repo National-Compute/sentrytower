@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nationalcompute.io/schemas/release/1.json",
+  "title": "Release",
+  "description": "One immutable published build, numbered in the order of publication, and the advisories it fixes. A ring's floor is a release sequence number.",
+  "type": "object",
+  "required": ["id", "sequence", "published"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "published": { "type": "string", "format": "date-time" },
+    "hostUnits": {
+      "description": "The store path of the host units that the release installs.",
+      "type": "string",
+      "minLength": 1
+    },
+    "images": {
+      "description": "The images of the release, as `application:tag`.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "sourceHash": { "type": "string", "minLength": 1 },
+    "candidates": {
+      "description": "The fix candidates that the release contains.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "fixes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/fix" }
+    }
+  },
+  "$defs": {
+    "fix": {
+      "title": "ReleaseFix",
+      "description": "One advisory that the release fixes.",
+      "type": "object",
+      "required": ["advisory"],
+      "properties": {
+        "advisory": { "type": "string", "minLength": 1 },
+        "aliases": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "kevDateAdded": {
+          "description": "The date on which CISA added the vulnerability to its Known Exploited Vulnerabilities catalog.",
+          "type": "string",
+          "format": "date"
+        }
+      }
+    }
+  }
+}

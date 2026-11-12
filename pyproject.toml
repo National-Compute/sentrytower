@@ -74,6 +74,7 @@ include = [
     "docker-compose.yml",
     "action.yml",
     "scripts/github_action.py",
+    "scripts/vendor_contracts.py",
     "LICENSE-APACHE",
     "LICENSE-MIT",
     "NOTICE",
@@ -91,6 +92,8 @@ markers = [
 line-length = 140
 target-version = "py311"
 src = ["src", "tests"]
+# The vendored contracts stay byte for byte as released (src/sentrytower/contracts/SHA256SUMS).
+extend-exclude = ["src/sentrytower/contracts/nc_contracts"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "BLE", "N", "UP", "SIM", "RUF", "S", "PTH", "C4", "PIE", "PL"]
@@ -133,4 +136,9 @@ check_untyped_defs = true
 
 [[tool.mypy.overrides]]
 module = "sentrytower.funnel.inventory"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+# Vendored unchanged from a release of the data contracts; their own repository checks them.
+module = "sentrytower.contracts.nc_contracts.*"
 ignore_errors = true

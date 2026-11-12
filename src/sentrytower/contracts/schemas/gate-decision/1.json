@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nationalcompute.io/schemas/gate-decision/1.json",
+  "title": "GateDecision",
+  "description": "The decision of an automatic gate about whether work goes on: the admission of a claim, the release of a candidate, or the promotion of a release to a ring. `pass`: the subject goes on. `fail`: the gate stopped the subject. `halt`: the gate stopped the whole run. `skipped`: the gate did not evaluate the subject. A person's decision is a ReviewDecision or an Approval, and the execution of a check is an OracleResult.",
+  "type": "object",
+  "required": ["gate", "outcome"],
+  "properties": {
+    "gate": {
+      "description": "The name of the gate.",
+      "type": "string",
+      "minLength": 1
+    },
+    "outcome": { "type": "string", "enum": ["pass", "fail", "halt", "skipped"] },
+    "reason": { "type": "string" },
+    "subject": { "$ref": "#/$defs/subject" },
+    "at": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "subject": {
+      "title": "GateSubject",
+      "description": "What the gate decided about.",
+      "type": "object",
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": {
+          "description": "For example `finding`, `candidate` or `release`.",
+          "type": "string",
+          "minLength": 1
+        },
+        "id": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

@@ -9,6 +9,20 @@ engine parameters) is always a notable change.
 
 ## [Unreleased]
 
+### Added
+
+- `src/sentrytower/contracts/`: the National Compute data contracts 1.0.0,
+  vendored unchanged from the release `contracts-1.0.0.tar.gz` (SHA-256
+  `ba5897b45dec8a73322efe57cde88803ec3b6bd377ce7f0d3478fe43f4ab60b5`): the
+  JSON Schemas of the shared entities and `nc_contracts`, their mappings
+  in Python (standard library only, so no new runtime dependency). They
+  are licensed Apache-2.0 OR MIT; the OSV schema v1.9.2 in them is
+  Apache-2.0 (see NOTICE). The test suite checks each vendored file
+  against `SHA256SUMS`. `make vendor-contracts BUNDLE=path/to/contracts-<version>.tar.gz`
+  (`scripts/vendor_contracts.py`) vendors a release after it checks the
+  tarball against the `SHA256SUMS` of the release and each file against
+  the `SHA256SUMS` in the tarball.
+
 ### Changed
 
 - The agent engine runs the Pi coding agent 1.5.0 (was 0.84.1): the

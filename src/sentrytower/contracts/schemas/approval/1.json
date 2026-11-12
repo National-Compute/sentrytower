@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nationalcompute.io/schemas/approval/1.json",
+  "title": "Approval",
+  "description": "A person's approval of one exact fix candidate, in one role. It binds the digest of the candidate and, when the change is on a Git server, the head commit of the change; an approval of other bytes or another head does not count.",
+  "type": "object",
+  "required": ["candidate", "candidateDigest", "actor", "role", "time"],
+  "properties": {
+    "candidate": { "type": "string", "minLength": 1 },
+    "candidateDigest": {
+      "description": "The `outputsDigest` of the candidate.",
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "changeHead": { "$ref": "../finding/1.json#/$defs/commit" },
+    "actor": {
+      "description": "The identifier of the person.",
+      "type": "string",
+      "minLength": 1
+    },
+    "role": { "type": "string", "minLength": 1 },
+    "time": { "type": "string", "format": "date-time" },
+    "sourceHash": {
+      "description": "The `sourceHash` of the candidate.",
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

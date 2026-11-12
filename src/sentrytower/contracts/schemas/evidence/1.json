@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nationalcompute.io/schemas/evidence/1.json",
+  "title": "Evidence",
+  "description": "How far the proof of a code finding went. `class` is one step of one ladder for all engines. A receipt is permitted only for the class `reproduced`, because only an execution makes a receipt. `verification` records an independent check that did not execute the claim, for example the blind verification of the public CLI.",
+  "type": "object",
+  "required": ["class"],
+  "properties": {
+    "class": { "$ref": "#/$defs/evidenceClass" },
+    "receipt": { "$ref": "#/$defs/receiptRef" },
+    "verification": { "$ref": "#/$defs/verification" }
+  },
+  "if": {
+    "required": ["class"],
+    "properties": { "class": { "not": { "const": "reproduced" } } }
+  },
+  "then": { "not": { "required": ["receipt"] } },
+  "$defs": {
+    "evidenceClass": {
+      "title": "EvidenceClass",
+      "description": "The evidence ladder, from the strongest. `reproduced`: a check executed and showed the effect. `reachable`: a cited path from attacker input to the effect survived an adversarial review. `defective`: the code is defective, and an independent review agreed, but no path is proved. `suspected`: a model stated the claim and nothing confirmed it. A value that a mapping does not recognize maps to `suspected`, because that class claims nothing more than a statement.",
+      "type": "string",
+      "enum": ["reproduced", "reachable", "defective", "suspected"]
+    },
+    "receiptRef": {
+      "title": "ReceiptRef",
+      "description": "A reference to the record of one execution: the format of the record and the SHA-256 of its canonical JSON (keys sorted, no white space, UTF-8).",
+      "type": "object",
+      "required": ["schema", "sha256"],
+      "properties": {
+        "schema": {
+          "description": "The format of the receipt, for example `sentrytower-receipt-v1`.",
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "uri": {
+          "description": "Where the receipt is kept, when it is kept outside the record that holds this reference.",
+          "type": "string",
+          "format": "uri-reference"
+        }
+      }
+    },
+    "verificationStatus": {
+      "title": "VerificationStatus",
+      "description": "`verified`: the check ran. `unverified`: the check failed, was refused or did not run (see `reason`). `none`: the engine does not check findings of this source. `unknown`: the source gave a status that a mapping did not recognize.",
+      "type": "string",
+      "enum": ["verified", "unverified", "none", "unknown"]
+    },
+    "verificationOutcome": {
+      "title": "VerificationOutcome",
+      "description": "What the check found. `supports`: the claim holds. `refutes`: a guard in the code stops the claim. `inconclusive`: the check could not decide. `unknown`: the source gave an outcome that a mapping did not recognize.",
+      "type": "string",
+      "enum": ["supports", "refutes", "inconclusive", "unknown"]
+    },
+    "verification": {
+      "title": "Verification",
+      "description": "An independent check of the claim that did not execute it.",
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": { "$ref": "#/$defs/verificationStatus" },
+        "method": {
+          "description": "How the check worked, for example `blind-vote`.",
+          "type": "string",
+          "minLength": 1
+        },
+        "outcome": { "$ref": "#/$defs/verificationOutcome" },
+        "score": {
+          "description": "The score of the check from 0 (refuted) to 1 (supported), when the method gives one.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "reason": {
+          "description": "Why the status is `unverified`.",
+          "type": "string"
+        }
+      }
+    }
+  }
+}

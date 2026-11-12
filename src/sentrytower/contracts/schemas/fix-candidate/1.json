@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nationalcompute.io/schemas/fix-candidate/1.json",
+  "title": "FixCandidate",
+  "description": "One frozen change that fixes a work item: what it changes, what it builds, the tests that ran, and where the change waits for review. An approval binds `outputsDigest` and the head of the change, so that a new commit makes a new candidate.",
+  "type": "object",
+  "required": ["id", "outputsDigest", "change", "tests", "createdAt"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "workItem": { "type": "string", "minLength": 1 },
+    "component": {
+      "description": "The name of the component that the change fixes.",
+      "type": "string",
+      "minLength": 1
+    },
+    "fromVersions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "toVersion": { "type": "string", "minLength": 1 },
+    "method": {
+      "description": "How the change fixes the component, for example `lockfile`, `overlay`, `graft`, `patch` or the name of a change written by hand.",
+      "type": "string",
+      "minLength": 1
+    },
+    "advisories": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "../finding/1.json#/$defs/fingerprint" }
+    },
+    "deployments": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "applications": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "approvalsNeeded": {
+      "description": "The roles that must approve the candidate.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "files": {
+      "description": "The files that the change touches, relative to the repository root.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "sourceHash": {
+      "description": "The hash of the source tree with the change, as the build tool writes it (for example the Nix narHash).",
+      "type": "string",
+      "minLength": 1
+    },
+    "outputs": {
+      "description": "The build outputs, by application and then by output name (for example `package` or `image`).",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": { "type": "string" }
+      }
+    },
+    "outputsDigest": {
+      "description": "The digest that approvals bind: SHA-256 of the canonical JSON of `outputs` (keys sorted, no white space, UTF-8), or of the patch bytes for a candidate with no build outputs.",
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "change": { "$ref": "#/$defs/changeRef" },
+    "tests": {
+      "description": "The builds and tests that ran on the candidate. An empty list means that none ran.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/testRun" }
+    },
+    "rationale": {
+      "description": "Why the change fixes the work item: what was wrong, what the change does, and how that closes it.",
+      "type": "string"
+    },
+    "provedAt": {
+      "description": "When the check of the finding ran again against the change and no longer matched. Absent when the change was never executed.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "createdAt": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "changeRef": {
+      "title": "ChangeRef",
+      "description": "Where the change is. `pull_request`: a pull request or merge request on a Git server. `commit`: a commit on a branch. `patch`: a unified diff with no commit yet.",
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["pull_request", "commit", "patch"] },
+        "url": { "type": "string", "format": "uri" },
+        "number": { "type": "integer", "minimum": 1 },
+        "branch": { "type": "string", "minLength": 1 },
+        "targetBranch": { "type": "string", "minLength": 1 },
+        "head": { "$ref": "../finding/1.json#/$defs/commit" },
+        "patchSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "testRun": {
+      "title": "TestRun",
+      "description": "One build, test or smoke check that ran on the candidate.",
+      "type": "object",
+      "required": ["name", "outcome"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "outcome": { "type": "string", "enum": ["passed", "failed", "skipped", "unknown"] },
+        "detail": { "type": "string" }
+      }
+    }
+  }
+}

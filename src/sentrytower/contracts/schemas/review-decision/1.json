@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nationalcompute.io/schemas/review-decision/1.json",
+  "title": "ReviewDecision",
+  "description": "A person's decision about a finding. It is an assertion, not a measurement: a retest can disagree with it, and both stay on the record. `reason` classifies a false positive. `expiresAt` applies only to `accepted`: the finding opens again at that time.",
+  "type": "object",
+  "required": ["finding", "decision", "by", "at"],
+  "properties": {
+    "finding": { "$ref": "../finding/1.json#/$defs/fingerprint" },
+    "decision": {
+      "type": "string",
+      "enum": ["fixed", "false_positive", "accepted", "cant_tell", "wont_fix"]
+    },
+    "reason": {
+      "description": "`not_reachable`: not reachable in production. `validated_upstream`: the input is validated before it arrives. `mitigated`: a control elsewhere stops it, for example a WAF, authentication or the network. `wrong_claim`: the code does not do what the finding says. `duplicate`: another finding states the same weakness.",
+      "type": "string",
+      "enum": ["not_reachable", "validated_upstream", "mitigated", "wrong_claim", "duplicate"]
+    },
+    "note": { "type": "string" },
+    "by": {
+      "description": "The identifier of the person.",
+      "type": "string",
+      "minLength": 1
+    },
+    "at": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" }
+  },
+  "allOf": [
+    {
+      "if": { "required": ["reason"] },
+      "then": { "properties": { "decision": { "const": "false_positive" } } }
+    },
+    {
+      "if": { "required": ["expiresAt"] },
+      "then": { "properties": { "decision": { "const": "accepted" } } }
+    }
+  ]
+}

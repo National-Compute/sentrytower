@@ -7,7 +7,7 @@ OUT ?= $(HOME)/sentrytower-results
 BIN := $(VENV)/bin
 
 .DEFAULT_GOAL := help
-.PHONY: help install lint format typecheck test test-fast golden docker docker-smoke audit doctor clean
+.PHONY: help install lint format typecheck test test-fast golden vendor-contracts docker docker-smoke audit doctor clean
 
 help: ## Show the targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z-]+:.*## / {printf "  %-12s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -39,6 +39,10 @@ test-fast: ## Run the tests without the whole-run scenarios
 
 golden: ## Regenerate the golden request fixtures (only for a deliberate change of the model requests)
 	$(BIN)/python tests/golden.py --write
+
+vendor-contracts: ## Vendor a release of the data contracts: BUNDLE=path/to/contracts-<version>.tar.gz (checks its SHA256SUMS)
+	@test -n "$(BUNDLE)" || (echo "set BUNDLE=path/to/contracts-<version>.tar.gz" >&2; exit 2)
+	$(PYTHON) scripts/vendor_contracts.py $(BUNDLE)
 
 docker: ## Build the container image
 	docker build -f docker/Dockerfile -t $(IMAGE) .

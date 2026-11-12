@@ -50,6 +50,21 @@ SentryTower)
   License: GPL-2.0-or-later
   Source: https://www.squid-cache.org
 
+National Compute data contracts 1.0.0 (src/sentrytower/contracts/)
+  License: Apache-2.0 OR MIT (src/sentrytower/contracts/LICENSE-APACHE,
+  src/sentrytower/contracts/LICENSE-MIT)
+  Copyright 2026 National Compute
+  The JSON Schemas and the Python module nc_contracts of the release
+  contracts-1.0.0.tar.gz, unchanged; src/sentrytower/contracts/SHA256SUMS
+  lists each file, and src/sentrytower/contracts/NOTICE is their notice.
+
+OSV schema v1.9.2 (src/sentrytower/contracts/schemas/vendor/osv-schema/v1.9.2/schema.json)
+  License: Apache License, Version 2.0
+  (src/sentrytower/contracts/schemas/vendor/osv-schema/LICENSE)
+  Source: https://github.com/ossf/osv-schema, release v1.9.2
+  An unmodified copy, part of the data contracts: their Advisory schema
+  refers to it.
+
 OASIS SARIF Version 2.1.0 JSON Schema (tests/data/sarif-schema-2.1.0.json,
 used by the tests only)
   Copyright (c) OASIS Open 2020. All Rights Reserved.

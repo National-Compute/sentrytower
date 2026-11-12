@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nationalcompute.io/schemas/finding/1.json",
+  "title": "Finding",
+  "description": "One security finding from any engine or scanner, in one form. `severity` says how bad the finding is if it is real; `evidence` says how far the proof went. A code finding must have evidence. The fingerprint is the identity of the finding across runs. It maps to and from a SARIF 2.1.0 result.",
+  "type": "object",
+  "required": ["fingerprint", "kind", "title", "severity", "engine"],
+  "properties": {
+    "id": {
+      "description": "The identifier that the producer gave the finding in its run, for example `ST-001` or a row identifier. It is not stable across runs; `fingerprint` is.",
+      "type": "string",
+      "minLength": 1
+    },
+    "fingerprint": { "$ref": "#/$defs/fingerprint" },
+    "kind": { "$ref": "#/$defs/findingKind" },
+    "title": { "type": "string", "minLength": 1 },
+    "description": {
+      "description": "The claim, the evidence and the conditions of the exploit, as text.",
+      "type": "string"
+    },
+    "severity": { "$ref": "../severity/1.json" },
+    "evidence": { "$ref": "../evidence/1.json" },
+    "engine": { "$ref": "#/$defs/engine" },
+    "ruleId": {
+      "description": "The rule of the engine that produced the finding: a CWE identifier, a scanner rule or an advisory identifier.",
+      "type": "string",
+      "minLength": 1
+    },
+    "target": { "$ref": "#/$defs/target" },
+    "location": { "$ref": "#/$defs/location" },
+    "relatedLocations": {
+      "description": "Other locations that the finding cites, with no role in the path.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/location" }
+    },
+    "path": {
+      "description": "The path from the source of the input to the sink, in order.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/pathStep" }
+    },
+    "cwe": {
+      "description": "CWE identifiers, the most specific first.",
+      "type": "array",
+      "items": { "type": "string", "pattern": "^CWE-[1-9][0-9]*$" }
+    },
+    "advisories": {
+      "description": "The identifiers of the advisories that the finding matches, for example CVE, GHSA or OSV identifiers.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "component": { "$ref": "../component/1.json" },
+    "fixedVersions": {
+      "description": "The versions of `component` that fix the advisories.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "reproduction": { "$ref": "#/$defs/check" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "properties": {
+      "description": "Fields of the producer that the contract does not define, for example a rank or a route. A reader must not need them to understand the finding.",
+      "type": "object"
+    }
+  },
+  "if": {
+    "required": ["kind"],
+    "properties": { "kind": { "const": "code" } }
+  },
+  "then": { "required": ["evidence"] },
+  "$defs": {
+    "findingKind": {
+      "title": "FindingKind",
+      "description": "`code`: a weakness in the source code. The other kinds are the deterministic scanner types.",
+      "type": "string",
+      "enum": [
+        "code",
+        "dependency_vulnerability",
+        "image_vulnerability",
+        "malicious_package",
+        "secret",
+        "iac"
+      ]
+    },
+    "fingerprint": {
+      "title": "Fingerprint",
+      "description": "The identity of a finding across runs, under a named scheme. Two findings with the same scheme and value are the same finding. The scheme names the material and the method, so a comparison is valid only within one scheme. Known schemes: `sentrytowerFindingHash/v1` (the public CLI: the first 32 hex digits of SHA-256 over the file, the first CWE and the title words), `sentrytowerScannerFinding/v1` (the scanner service: 64 hex digits), `sarifResultHash/v1` (a SARIF result with no fingerprint: the hex SHA-256 of the rule, the path, the start line and the message, joined by `|`). A SARIF result keeps the name of its `partialFingerprints` entry as the scheme.",
+      "type": "object",
+      "required": ["scheme", "value"],
+      "properties": {
+        "scheme": {
+          "description": "The name of the scheme. The schemes of National Compute end in a version, `/v<n>`; a scheme from a SARIF producer keeps the name that the producer gave.",
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]*(/v[1-9][0-9]*)?$"
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^[\\x21-\\x7e]{1,256}$"
+        }
+      }
+    },
+    "engine": {
+      "title": "Engine",
+      "description": "The engine or scanner that produced the finding.",
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "description": "For example `SentryTower`, `osv-scanner` or `gitleaks`.",
+          "type": "string",
+          "minLength": 1
+        },
+        "version": { "type": "string", "minLength": 1 },
+        "mode": {
+          "description": "The part of the engine that found it, for example `deep-check` or `single-agent`.",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "target": {
+      "title": "Target",
+      "description": "What was scanned. `repository`: a tree, at `revision` when it is a Git commit. `diff`: the change from `base` to `revision`, which touches `changedFiles`. `oci_image`: an image at `digest`.",
+      "type": "object",
+      "required": ["kind", "locator"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["repository", "diff", "oci_image"] },
+        "locator": {
+          "description": "The name of the target, for example `github:owner/name`, a folder name or an image reference.",
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": { "$ref": "#/$defs/commit" },
+        "base": { "$ref": "#/$defs/commit" },
+        "changedFiles": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      }
+    },
+    "commit": {
+      "title": "CommitId",
+      "description": "A Git commit identifier: SHA-1 (40 hex digits) or SHA-256 (64 hex digits).",
+      "type": "string",
+      "pattern": "^([0-9a-f]{40}|[0-9a-f]{64})$"
+    },
+    "location": {
+      "title": "Location",
+      "description": "A region of one file. `path` is relative to the root of the target and uses `/` separators.",
+      "type": "object",
+      "required": ["path"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "startLine": { "type": "integer", "minimum": 1 },
+        "endLine": { "type": "integer", "minimum": 1 },
+        "startColumn": { "type": "integer", "minimum": 1 },
+        "endColumn": { "type": "integer", "minimum": 1 },
+        "note": {
+          "description": "What this code does in the finding.",
+          "type": "string"
+        },
+        "excerpt": {
+          "description": "A short excerpt of the code, so that a reader can judge the citation without the file.",
+          "type": "string"
+        }
+      }
+    },
+    "pathStep": {
+      "title": "PathStep",
+      "description": "One step of the path from the source of the input to the sink.",
+      "type": "object",
+      "required": ["role", "location"],
+      "properties": {
+        "role": { "type": "string", "enum": ["source", "hop", "sink"] },
+        "location": { "$ref": "#/$defs/location" }
+      }
+    },
+    "check": {
+      "title": "Check",
+      "description": "The one check that the owner of the code runs to settle the claim.",
+      "type": "object",
+      "required": ["kind", "intent", "command", "expect"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["curl", "test", "script", "manual"] },
+        "intent": {
+          "description": "One line about what the check proves.",
+          "type": "string",
+          "minLength": 1
+        },
+        "command": {
+          "description": "The shell command or code, ready to run.",
+          "type": "string",
+          "minLength": 1
+        },
+        "expect": {
+          "description": "What a vulnerable system returns.",
+          "type": "string",
+          "minLength": 1
+        },
+        "minutes": {
+          "description": "The estimated time to run the check.",
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}
