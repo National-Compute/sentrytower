@@ -82,6 +82,8 @@ __all__ = [
     "RunEventPayloads",
     "RunStatusPayload",
     "ScannerArtifactDescriptor",
+    "ScannerArtifactKind",
+    "ScannerCodeAudit",
     "ScannerFinding",
     "ScannerFindingSource",
     "ScannerJobErrorCode",
@@ -968,6 +970,26 @@ class ScannerArtifactDescriptor(TypedDict):
     path: str
 
 
+#: The kinds of the stored artifacts of a job: the inventory exports (`cyclonedx`, `spdx`), the
+#: canonical deterministic `findings` and `provenance`, and the outputs of a code audit
+#: (`code_audit_findings` is the CLI's findings.json, `code_audit_sarif` its findings.sarif,
+#: `code_audit_run` its run.json).
+ScannerArtifactKind = Literal["cyclonedx", "spdx", "findings", "provenance", "code_audit_findings", "code_audit_sarif", "code_audit_run"]
+
+
+class ScannerCodeAudit(TypedDict):
+    """
+    One run of the public CLI's engine (`sentrytower audit`). The cap is enforced by the CLI's
+    model gateway before each call.
+    """
+    depth: Literal["quick", "standard", "deep", "max"]
+    #: The cost cap of the model calls in millionths of a US dollar, as in Budget: at least 1 and at
+    #: most 50000000 (50 USD, the cap of the `max` depth).
+    costCapMicroUsd: int
+    #: One model for every role of the CLI (`--model`); absent for the CLI's default model.
+    model: NotRequired[str]
+
+
 class ScannerFindingSource(TypedDict):
     scanner: str
     scannerVersion: str | None
@@ -1012,7 +1034,7 @@ class ScannerLimits(TypedDict):
     jobTimeoutSeconds: int
 
 
-ScannerModule = Literal["inventory", "dependency_vulnerability", "malicious_package", "secret", "secret_validation", "iac", "image_vulnerability"]
+ScannerModule = Literal["inventory", "dependency_vulnerability", "malicious_package", "secret", "secret_validation", "iac", "image_vulnerability", "code_audit"]
 
 
 class ScannerOciImageSubject(TypedDict):
@@ -1036,10 +1058,13 @@ class ScannerJobRequest(TypedDict):
     The scanner job contract between the application and the scanner service, as it is on the
     wire: the job request (`sentrytower-scanner-job-v1`), the result of the runner
     (`$defs/runnerResult`, `sentrytower-scanner-runner-v1`) and the provenance that the service
-    stores (`$defs/provenance`). Fields that the service writes as null are required and
-    nullable. The service checks the rules between fields (the modules that a subject supports,
-    the inventory prerequisite, the fixed limits of the profile `r1`) in code; this schema checks
-    the shape.
+    stores (`$defs/provenance`). Version 2 adds the `code_audit` module (the public CLI's engine
+    from its released image), its settings in `codeAudit`, the `codeAuditImage` of the provenance
+    and the stored artifact kinds (`$defs/artifactKind`). Fields that the service writes as null
+    are required and nullable. The service checks the rules between fields (the modules that a
+    subject supports, the inventory prerequisite, the fixed limits of the profile `r1`,
+    `codeAudit` present exactly when `code_audit` is requested, and `code_audit` on a repository
+    only) in code; this schema checks the shape.
     """
     schemaVersion: Literal["sentrytower-scanner-job-v1"]
     jobId: str
@@ -1054,6 +1079,10 @@ class ScannerJobRequest(TypedDict):
     profile: str
     policyVersion: int
     limits: ScannerLimits
+    #: The settings of the `code_audit` module; present exactly when `code_audit` is requested. On
+    #: the wire it follows `limits` and is absent without the module, so that the request digest of
+    #: a job without it does not change.
+    codeAudit: NotRequired[ScannerCodeAudit]
 
 
 ScannerModuleState = Literal["complete", "failed", "skipped", "canceled"]
@@ -1076,6 +1105,9 @@ class ScannerProvenance(TypedDict):
     inputSha256: str
     tools: dict[str, str]
     dataDigest: str | None
+    #: The digest-pinned CLI image of the `code_audit` module; absent when the job has no code
+    #: audit.
+    codeAuditImage: NotRequired[str]
     completedAt: str
 
 
@@ -1129,7 +1161,7 @@ class WorkItem(TypedDict):
 
 
 #: The version of the contracts package that these types come from.
-CONTRACTS_VERSION = "1.0.0"
+CONTRACTS_VERSION = "2.0.0"
 
 #: The `$id` of each entity schema, by schema directory.
 SCHEMA_IDS: dict[str, str] = {
@@ -1150,7 +1182,7 @@ SCHEMA_IDS: dict[str, str] = {
     "review-decision": "https://nationalcompute.io/schemas/review-decision/1.json",
     "ring": "https://nationalcompute.io/schemas/ring/1.json",
     "run-event": "https://nationalcompute.io/schemas/run-event/1.json",
-    "scanner-job": "https://nationalcompute.io/schemas/scanner-job/1.json",
+    "scanner-job": "https://nationalcompute.io/schemas/scanner-job/2.json",
     "severity": "https://nationalcompute.io/schemas/severity/1.json",
     "work-item": "https://nationalcompute.io/schemas/work-item/1.json",
 }

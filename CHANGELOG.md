@@ -11,9 +11,9 @@ engine parameters) is always a notable change.
 
 ### Added
 
-- `src/sentrytower/contracts/`: the National Compute data contracts 1.0.0,
-  vendored unchanged from the release `contracts-1.0.0.tar.gz` (SHA-256
-  `ba5897b45dec8a73322efe57cde88803ec3b6bd377ce7f0d3478fe43f4ab60b5`): the
+- `src/sentrytower/contracts/`: the National Compute data contracts 2.0.0,
+  vendored unchanged from the release `contracts-2.0.0.tar.gz` (SHA-256
+  `1f487323047e627d0d3ed83d8036ab104657a9b370103a325c57c5ac843b1c51`): the
   JSON Schemas of the shared entities and `nc_contracts`, their mappings
   in Python (standard library only, so no new runtime dependency). They
   are licensed Apache-2.0 OR MIT; the OSV schema v1.9.2 in them is
