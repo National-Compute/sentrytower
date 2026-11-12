@@ -60,12 +60,25 @@ class Rig:
 
 @pytest.fixture(autouse=True)
 def _private_user_folders(tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """No test reads or writes the settings, the state, the cache or the keychain of the person who runs the tests."""
+    """No test reads or writes the settings, the state, the cache or the keychain of the person who runs the tests.
+
+    The home folder and the XDG folders are temporary folders, and no
+    ``SENTRYTOWER_*`` variable, provider key or funnel variable of the
+    person's shell reaches a test.
+    """
     home = tmp_path_factory.mktemp("user")
-    for name, folder in (("XDG_CONFIG_HOME", "config"), ("XDG_STATE_HOME", "state"), ("XDG_CACHE_HOME", "cache")):
+    (home / "home").mkdir()
+    monkeypatch.setenv("HOME", str(home / "home"))
+    for name, folder in (
+        ("XDG_CONFIG_HOME", "config"),
+        ("XDG_STATE_HOME", "state"),
+        ("XDG_CACHE_HOME", "cache"),
+        ("XDG_DATA_HOME", "data"),
+    ):
         monkeypatch.setenv(name, str(home / folder))
-    for name in ("SENTRYTOWER_CONFIG", "SENTRYTOWER_PROFILE", "SENTRYTOWER_RECORD", "SENTRYTOWER_THEME", "SENTRYTOWER_PLAIN"):
-        monkeypatch.delenv(name, raising=False)
+    for name in list(os.environ):
+        if name.startswith(("SENTRYTOWER_", "FUNNEL_INVENTORY_")) or name == "OPENROUTER_API_KEY":
+            monkeypatch.delenv(name)
     from sentrytower.ui import keychain
 
     monkeypatch.setattr(keychain, "backend", lambda: None)

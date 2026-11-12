@@ -9,6 +9,15 @@ engine parameters) is always a notable change.
 
 ## [Unreleased]
 
+### Fixed
+
+- The settings folder of a given environment that sets neither
+  `XDG_CONFIG_HOME` nor `HOME` is the settings folder of the process, so
+  its `XDG_CONFIG_HOME` comes before its home folder. The test suite runs
+  with a temporary home folder and without the `SENTRYTOWER_*` variables
+  of the shell, so the settings of the person who runs it cannot change a
+  result.
+
 ## [0.1.1] - 2026-11-09
 
 ### Added

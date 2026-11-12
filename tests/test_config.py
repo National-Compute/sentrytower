@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from sentrytower.config import AGENT_ROLE, AGENT_ROLES, FAST_ROLES, FUNNEL_ROLES, ROLES, ConfigError, load_config, write_config
+from sentrytower.config import AGENT_ROLE, AGENT_ROLES, FAST_ROLES, FUNNEL_ROLES, ROLES, ConfigError, config_home, load_config, write_config
 from sentrytower.policies import DEFAULT_MODEL
 
 
@@ -182,6 +182,20 @@ def test_the_user_settings_file_and_a_profile_are_found_in_the_config_folder(tmp
         load_config(environment=environment, profile="../escape")
     # Without a file: the defaults.
     assert load_config(environment={"XDG_CONFIG_HOME": str(tmp_path / "empty")}).sources == ("defaults",)
+
+
+def test_an_environment_without_a_settings_folder_takes_the_folder_of_the_process(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    home = tmp_path / "home"
+    (home / ".config" / "sentrytower").mkdir(parents=True)
+    (home / ".config" / "sentrytower" / "config.toml").write_text("[budget]\nmax_tokens = 5000000\n")
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    # The XDG_CONFIG_HOME of the process comes before its home folder: the file under the home folder is not read.
+    assert config_home({}) == tmp_path / "xdg" / "sentrytower"
+    assert load_config(environment={}).sources == ("defaults",)
+    # An environment that names a home folder keeps it.
+    assert config_home({"HOME": str(home)}) == home / ".config" / "sentrytower"
+    assert load_config(environment={"HOME": str(home)}).budget.max_tokens == 5_000_000
 
 
 @pytest.mark.parametrize(

@@ -544,8 +544,16 @@ def apply_environment(config: Config, environment: Mapping[str, str]) -> Config:
 
 
 def config_home(environment: Mapping[str, str] | None = None) -> Path:
-    """The folder of the user's settings: ``$XDG_CONFIG_HOME/sentrytower``, else ``~/.config/sentrytower``."""
+    """The folder of the user's settings: ``$XDG_CONFIG_HOME/sentrytower``, else ``~/.config/sentrytower``.
+
+    A given ``environment`` that sets neither ``XDG_CONFIG_HOME`` nor ``HOME``
+    takes both from the process environment. ``Path.home()`` alone would read
+    the home folder of the process and skip its ``XDG_CONFIG_HOME``, which
+    comes first.
+    """
     env = os.environ if environment is None else environment
+    if not env.get("XDG_CONFIG_HOME") and not env.get("HOME"):
+        env = os.environ
     base = env.get("XDG_CONFIG_HOME") or str(Path(env.get("HOME") or Path.home()) / ".config")
     return Path(base) / "sentrytower"
 
