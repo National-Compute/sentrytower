@@ -8,7 +8,7 @@ shows the model the paths of the measured runs (`/workspace/repo` and
 
 | Way | Command | What it needs |
 | --- | --- | --- |
-| [Command line](#command-line) | `uv tool install git+https://github.com/National-Compute/sentrytower@v0.1.1` | Python 3.11 or later, uv, Node.js 22.19 or later, the Pi CLI 0.84.1, ripgrep and fd |
+| [Command line](#command-line) | `uv tool install git+https://github.com/National-Compute/sentrytower@v0.1.1` | Python 3.11 or later, uv, Node.js 22.19 or later, the Pi CLI 1.5.0, ripgrep and fd |
 | [Container image](#container-image) | `docker run --rm ghcr.io/national-compute/sentrytower:0.1.1 --version` | Docker (or another OCI runtime) on Linux, macOS or Windows; linux/amd64 or linux/arm64 |
 | [GitHub Action](#github-action) | `uses: National-Compute/sentrytower@v0.1.1` | A Linux runner with Docker and Python 3.9 or later (each GitHub-hosted Linux runner has both) |
 
@@ -27,12 +27,12 @@ your own machine. The same version runs the same audit in each way.
 ## Command line
 
 Requirements: Python 3.11 or later, [uv](https://docs.astral.sh/uv/)
-(or pipx), Node.js 22.19 or later, the Pi CLI 0.84.1, ripgrep and fd.
+(or pipx), Node.js 22.19 or later, the Pi CLI 1.5.0, ripgrep and fd.
 
 ```sh
 uv tool install git+https://github.com/National-Compute/sentrytower@v0.1.1
 # or: pipx install git+https://github.com/National-Compute/sentrytower@v0.1.1
-npm install -g @earendil-works/pi-coding-agent@0.84.1
+npm install -g @earendil-works/pi-coding-agent@1.5.0
 # ripgrep and fd: brew install ripgrep fd | apt install ripgrep fd-find | ...
 
 sentrytower --version                          # sentrytower 0.1.1
@@ -93,7 +93,7 @@ make docker-smoke      # the image against a fake model endpoint: no key, no mod
 
 The image:
 
-- is built in stages: Node.js 24.19.0, Pi 0.84.1 from `docker/pi/package-lock.json`
+- is built in stages: Node.js 24.19.0, Pi 1.5.0 from `docker/pi/package-lock.json`
   (`npm ci`, integrity checked), ripgrep 15.2.0 and fd 10.5.0 from their
   release archives (SHA-256 of each archive and binary checked), and the
   SentryTower wheel on Python 3.12.15; each base image is pinned by digest;

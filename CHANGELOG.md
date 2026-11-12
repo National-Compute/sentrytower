@@ -9,6 +9,22 @@ engine parameters) is always a notable change.
 
 ## [Unreleased]
 
+### Changed
+
+- The agent engine runs the Pi coding agent 1.5.0 (was 0.84.1): the
+  container image, `docker/pi/package-lock.json`, the version that
+  `sentrytower doctor` and `install.sh` check, and the install commands of
+  the documentation. The command, the agent configuration files and the
+  prompts stay the same. Pi 1.5.0 changes the agent requests: it writes
+  another system prompt and leaves `"strict": false` out of each tool
+  definition. The task prompt, the tool descriptions and parameters, the
+  tool results and the requests of the funnel's direct calls are the same.
+  The image runs the `bin` of the Pi package, `dist/bundle/cli.js`.
+- Before the next release, run the benchmark parity check again (the
+  benchmark harness is private): its results were measured with Pi 0.84.1.
+- `install.sh` prints the install command of the pinned Pi when another
+  version is installed. It does not replace that version.
+
 ### Fixed
 
 - The settings folder of a given environment that sets neither

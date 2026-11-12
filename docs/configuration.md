@@ -408,7 +408,7 @@ wall_clock_seconds = 14_400
 large_repo_files = 1000                      # 1,000 counted files or fewer: funnel; more: single agent
 
 [tools]                                      # default: found on PATH
-# pi = "/opt/pi/dist/cli.js"
+# pi = "/opt/pi/dist/bundle/cli.js"
 # rg = "/usr/local/bin/rg"
 # fd = "/usr/local/bin/fd"
 

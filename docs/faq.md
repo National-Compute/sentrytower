@@ -187,7 +187,7 @@ them, under the preview label. The single-agent route has no cap.
 
 The Pi CLI builds the requests of the agent sessions. Another version can
 send other requests and give other results. `sentrytower doctor` warns when
-another version is installed; the container image pins 0.84.1.
+another version is installed; the container image pins 1.5.0.
 
 ### Does it work on Windows?
 
