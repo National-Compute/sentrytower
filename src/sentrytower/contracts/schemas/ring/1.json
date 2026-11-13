@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nationalcompute.io/schemas/ring/1.json",
+  "title": "Ring",
+  "description": "One stage of a rollout: its hosts, its soak time, the release they run and its security floor. A release enters a ring only after it ran healthy in the ring before it for that ring's soak time. A release below the floor would open the advisories that the floor release fixed again, so a rollback below it needs a named approver.",
+  "type": "object",
+  "required": ["name", "hosts"],
+  "properties": {
+    "name": { "type": "string", "minLength": 1 },
+    "position": {
+      "description": "The place of the ring in the rollout order, from 0.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "hosts": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "soakSeconds": { "type": "integer", "minimum": 0 },
+    "release": {
+      "description": "The release that the ring's hosts run.",
+      "type": "string",
+      "minLength": 1
+    },
+    "floor": { "$ref": "#/$defs/floor" }
+  },
+  "$defs": {
+    "floor": {
+      "title": "RingFloor",
+      "description": "The lowest release that the ring may run, and why.",
+      "type": "object",
+      "required": ["sequence", "reason"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1 },
+        "release": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

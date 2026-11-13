@@ -10,14 +10,19 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+import jsonschema
 import pytest
+import referencing
+from referencing.jsonschema import DRAFT202012
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from fakes import FakeModel, fake_pi_package, fake_tools
 from sentrytower.audit import AuditOutcome, AuditRequest, Log, run_audit
 from sentrytower.config import load_config
+from sentrytower.contracts import schema_documents
 
+FINDINGS_SCHEMA = Path(__file__).resolve().parents[1] / "src" / "sentrytower" / "schemas" / "findings-v2.schema.json"
 KEY = "test-provider-key-0000000000000000"
 
 
@@ -83,6 +88,21 @@ def _private_user_folders(tmp_path_factory: pytest.TempPathFactory, monkeypatch:
 
     monkeypatch.setattr(keychain, "backend", lambda: None)
     return home
+
+
+def contract_registry() -> referencing.Registry:
+    """The vendored contract schemas by their ``$id``: the findings schema refers to them so."""
+    return referencing.Registry().with_resources(
+        (uri, DRAFT202012.create_resource(document)) for uri, document in schema_documents().items()
+    )
+
+
+@pytest.fixture(scope="session")
+def findings_validator() -> jsonschema.Draft202012Validator:
+    """A validator of findings.json: the findings schema with the contract schemas, and the formats checked."""
+    schema = json.loads(FINDINGS_SCHEMA.read_text(encoding="utf-8"))
+    jsonschema.Draft202012Validator.check_schema(schema)
+    return jsonschema.Draft202012Validator(schema, registry=contract_registry(), format_checker=jsonschema.FormatChecker())
 
 
 @pytest.fixture

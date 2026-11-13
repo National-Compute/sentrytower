@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nationalcompute.io/schemas/observation/1.json",
+  "title": "Observation",
+  "description": "A record of which artifact a build produced or a host ran, at one time. An observation with the source `running` is the only evidence that a fixed version runs; it closes an exposure.",
+  "type": "object",
+  "required": ["time", "source", "artifact"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "time": { "type": "string", "format": "date-time" },
+    "source": {
+      "description": "`built`: a build produced the artifact. `running`: a host reported that the artifact runs.",
+      "type": "string",
+      "enum": ["built", "running"]
+    },
+    "artifact": {
+      "description": "The artifact: a Nix store path, an OCI image identifier, or the digest of a host package list.",
+      "type": "string",
+      "minLength": 1
+    },
+    "deployment": {
+      "description": "Where the artifact runs, as `host/unit`. Absent for a build.",
+      "type": "string",
+      "minLength": 1
+    },
+    "host": { "type": "string", "minLength": 1 },
+    "ring": { "type": "string", "minLength": 1 },
+    "application": { "type": "string", "minLength": 1 },
+    "unit": {
+      "description": "The service unit on the host, or `os` for the host packages.",
+      "type": "string",
+      "minLength": 1
+    },
+    "release": {
+      "description": "The release that the host ran when it reported.",
+      "type": "string",
+      "minLength": 1
+    },
+    "state": {
+      "description": "The state of the unit that the host reported, for example `active` or `failed`.",
+      "type": "string",
+      "minLength": 1
+    },
+    "loaded": {
+      "description": "The store paths that the process had mapped, when the host reported them.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "components": {
+      "description": "The components of the artifact, when the observation carries them.",
+      "type": "array",
+      "items": { "$ref": "../component/1.json" }
+    }
+  }
+}

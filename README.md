@@ -181,7 +181,7 @@ opens `report.html` in your browser when it ends (`--no-open` turns this off):
 | File | What it holds |
 | --- | --- |
 | `report.html` | The report as one web page: the findings by severity, each with its location, explanation and CWE link |
-| `findings.json` | Each finding with its title, severity, CWE, locations, evidence and exploit conditions ([schema](docs/output-format.md)) |
+| `findings.json` | Each finding with its title, severity, CWE, locations, explanation and evidence class, in the Finding format of the National Compute data contracts ([schema](docs/output-format.md)) |
 | `findings.sarif` | SARIF 2.1.0 for GitHub code scanning and any SARIF viewer |
 | `report.md` | A readable report to share or attach to a ticket |
 | `run.json` | The result of the run (its status, why it stopped, the spend and the checked units), the route, the models, the tokens and the timings |

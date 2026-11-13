@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nationalcompute.io/schemas/retest-outcome/1.json",
+  "title": "RetestOutcome",
+  "description": "The outcome of a retest: the check of a finding run again against a tree that is not the tree where it was found. `kind` is `commit` for a commit that the owner says fixes the finding, and `patch` for a candidate patch applied to `baseCommit`. The meaning is the inverse of verification: a check that matches its expectation means that the weakness is still present. `rung` says how the outcome was reached and travels with the outcome everywhere, so that an argued `fixed` never reads as an executed one.",
+  "type": "object",
+  "required": ["finding", "kind", "targetCommit", "rung", "outcome"],
+  "properties": {
+    "finding": { "$ref": "../finding/1.json#/$defs/fingerprint" },
+    "kind": { "type": "string", "enum": ["commit", "patch"] },
+    "targetCommit": {
+      "description": "The tree under test: the commit, or the base that the patch applies to.",
+      "$ref": "../finding/1.json#/$defs/commit"
+    },
+    "baseCommit": {
+      "description": "The commit where the finding was first proved, when it is known.",
+      "$ref": "../finding/1.json#/$defs/commit"
+    },
+    "patchSha256": {
+      "description": "SHA-256 of the unified diff, for the kind `patch`.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "trigger": {
+      "description": "What started the retest.",
+      "type": "string",
+      "enum": ["manual", "merge", "pr", "sweep", "fix"]
+    },
+    "rung": {
+      "description": "`executed`: the check ran in a sandbox. `argued`: a model reasoned from the diff; nothing ran. `unrelated`: the diff does not touch the cited code. `inconclusive`: no rung decided.",
+      "type": "string",
+      "enum": ["executed", "argued", "unrelated", "inconclusive"]
+    },
+    "outcome": {
+      "type": "string",
+      "enum": ["fixed", "still_firing", "unrelated", "inconclusive"]
+    },
+    "booted": {
+      "description": "True when the application served requests while the check ran.",
+      "type": "boolean"
+    },
+    "harness": {
+      "description": "The test runner of the repository, when it ran the check instead of a started application.",
+      "type": "string",
+      "minLength": 1
+    },
+    "receipt": { "$ref": "../evidence/1.json#/$defs/receiptRef" },
+    "rationale": {
+      "description": "The reasoning of a rung that did not execute.",
+      "type": "string"
+    },
+    "changedFiles": {
+      "description": "The paths that the diff touched.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "at": { "type": "string", "format": "date-time" }
+  },
+  "if": {
+    "required": ["rung"],
+    "properties": { "rung": { "not": { "const": "executed" } } }
+  },
+  "then": { "not": { "required": ["receipt"] } }
+}

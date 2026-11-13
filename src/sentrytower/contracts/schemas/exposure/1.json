@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nationalcompute.io/schemas/exposure/1.json",
+  "title": "Exposure",
+  "description": "One advisory that affects one component in one deployment, from the time it opened to the time it closed. Only a running observation of the fixed artifact closes an exposure as fixed; a decision, a confirmation by rule or a corrected match closes it for its own reason. `decision` is the analysis in CycloneDX 1.6 VEX terms.",
+  "type": "object",
+  "required": ["advisory", "component", "deployment", "state", "opened"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "advisory": {
+      "description": "The identifier of the advisory.",
+      "type": "string",
+      "minLength": 1
+    },
+    "aliases": {
+      "description": "Other identifiers of the same vulnerability.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "component": { "$ref": "../component/1.json" },
+    "deployment": {
+      "description": "Where the component runs, as `host/unit`.",
+      "type": "string",
+      "minLength": 1
+    },
+    "application": { "type": "string", "minLength": 1 },
+    "severity": { "$ref": "../severity/1.json" },
+    "state": { "type": "string", "enum": ["open", "closed"] },
+    "stage": { "$ref": "#/$defs/stage" },
+    "opened": { "type": "string", "format": "date-time" },
+    "closed": { "type": "string", "format": "date-time" },
+    "closure": { "$ref": "#/$defs/closure" },
+    "decision": { "$ref": "#/$defs/decision" },
+    "candidate": {
+      "description": "The identifier of the fix candidate for this exposure, when there is one.",
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "allOf": [
+    {
+      "if": { "required": ["state"], "properties": { "state": { "const": "closed" } } },
+      "then": { "required": ["closed", "closure"], "not": { "required": ["stage"] } },
+      "else": { "not": { "anyOf": [{ "required": ["closed"] }, { "required": ["closure"] }] } }
+    }
+  ],
+  "$defs": {
+    "stage": {
+      "title": "ExposureStage",
+      "description": "How far the fix of an open exposure went. `detected`: matched, no fix yet. `confirmed_affected`: a rule confirmed the match. `fix_prepared`: a candidate exists. `candidate_rejected`: a person rejected the candidate. `approved`: every required role approved the candidate. `rolling_out`: a release with the fix moves through the rings. `awaiting_observation`: the release runs in the ring of the deployment, and no observation shows the fixed artifact yet. `rolled_back`: the release was rolled back in that ring.",
+      "type": "string",
+      "enum": [
+        "detected",
+        "confirmed_affected",
+        "fix_prepared",
+        "candidate_rejected",
+        "approved",
+        "rolling_out",
+        "awaiting_observation",
+        "rolled_back"
+      ]
+    },
+    "closure": {
+      "title": "ExposureClosure",
+      "description": "Why the exposure closed. `fixed_observed`: a running observation shows the fixed artifact. `fixed_confirmed`: a rule confirmed that the running build contains the fix. `not_affected`: a person decided that the component is not affected. `risk_accepted`: a person accepted the risk until a date. `withdrawn`: the same artifact no longer matches, so the match was wrong.",
+      "type": "object",
+      "required": ["reason"],
+      "properties": {
+        "reason": {
+          "type": "string",
+          "enum": ["fixed_observed", "fixed_confirmed", "not_affected", "risk_accepted", "withdrawn"]
+        },
+        "observation": { "$ref": "../observation/1.json" },
+        "detail": { "type": "string" }
+      },
+      "if": { "required": ["reason"], "properties": { "reason": { "const": "fixed_observed" } } },
+      "then": { "required": ["observation"] }
+    },
+    "decision": {
+      "title": "ExposureDecision",
+      "description": "The analysis of the exposure, as a CycloneDX 1.6 vulnerability analysis, plus who decided and when an acceptance of risk lapses. The value `unknown` marks an input that a mapping did not recognize; CycloneDX has no such value.",
+      "type": "object",
+      "required": ["state"],
+      "properties": {
+        "state": { "$ref": "#/$defs/analysisState" },
+        "justification": { "$ref": "#/$defs/justification" },
+        "response": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/response" }
+        },
+        "detail": { "type": "string" },
+        "firstIssued": { "type": "string", "format": "date-time" },
+        "lastUpdated": { "type": "string", "format": "date-time" },
+        "decidedBy": {
+          "description": "The person who made the decision. Absent when a rule made it.",
+          "type": "string",
+          "minLength": 1
+        },
+        "until": {
+          "description": "The date on which an acceptance of risk lapses and the exposure opens again.",
+          "type": "string",
+          "format": "date"
+        }
+      }
+    },
+    "analysisState": {
+      "title": "ExposureAnalysisState",
+      "type": "string",
+      "enum": [
+        "resolved",
+        "resolved_with_pedigree",
+        "exploitable",
+        "in_triage",
+        "false_positive",
+        "not_affected",
+        "unknown"
+      ]
+    },
+    "justification": {
+      "title": "ExposureJustification",
+      "type": "string",
+      "enum": [
+        "code_not_present",
+        "code_not_reachable",
+        "requires_configuration",
+        "requires_dependency",
+        "requires_environment",
+        "protected_by_compiler",
+        "protected_at_runtime",
+        "protected_at_perimeter",
+        "protected_by_mitigating_control",
+        "unknown"
+      ]
+    },
+    "response": {
+      "title": "ExposureResponse",
+      "type": "string",
+      "enum": ["can_not_fix", "will_not_fix", "update", "rollback", "workaround_available", "unknown"]
+    }
+  }
+}

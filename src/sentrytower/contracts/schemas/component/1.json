@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nationalcompute.io/schemas/component/1.json",
+  "title": "Component",
+  "description": "One software component at one version: a package, a library in a closure, or an operating-system package. Matching uses `purl` first and `cpe` second. It maps to a CycloneDX component.",
+  "type": "object",
+  "required": ["name"],
+  "properties": {
+    "name": { "type": "string", "minLength": 1 },
+    "version": {
+      "description": "The version as the ecosystem writes it. Absent when no version is known.",
+      "type": "string"
+    },
+    "ecosystem": {
+      "description": "The OSV ecosystem name (for example `npm`, `PyPI`, `Maven`, `Go`, `crates.io`), or the purl type when no OSV ecosystem applies.",
+      "type": "string",
+      "minLength": 1
+    },
+    "purl": {
+      "description": "The package URL (https://github.com/package-url/purl-spec).",
+      "type": "string",
+      "pattern": "^pkg:[A-Za-z.+-][A-Za-z0-9.+-]*/.+"
+    },
+    "cpe": {
+      "description": "The CPE 2.3 formatted string, or a CPE 2.2 URI.",
+      "type": "string",
+      "pattern": "^cpe:(2\\.3:[aho*-]:|/[aho]:)"
+    },
+    "patches": {
+      "description": "The patches that the build applies to the upstream source, by name. An empty list means no patches. Absent means that the patches are not known.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "artifact": {
+      "description": "The artifact that contains the component: a Nix store path, an OCI image digest, or the digest of a host package list.",
+      "type": "string",
+      "minLength": 1
+    },
+    "storePath": {
+      "description": "The Nix store path of the component, when it has one.",
+      "type": "string",
+      "minLength": 1
+    },
+    "foundIn": {
+      "description": "Where the inventory found the component, for example the closure, a lockfile or the host package database.",
+      "type": "string",
+      "minLength": 1
+    },
+    "licenses": {
+      "description": "SPDX license identifiers or expressions.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "paths": {
+      "description": "The manifests and lockfiles that declare the component, relative to the repository root.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "direct": {
+      "description": "True for a direct dependency and false for a transitive one. Absent when the dependency graph is not known.",
+      "type": "boolean"
+    }
+  }
+}

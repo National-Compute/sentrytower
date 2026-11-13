@@ -1,0 +1,343 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nationalcompute.io/schemas/scanner-job/2.json",
+  "title": "ScannerJobRequest",
+  "description": "The scanner job contract between the application and the scanner service, as it is on the wire: the job request (`sentrytower-scanner-job-v1`), the result of the runner (`$defs/runnerResult`, `sentrytower-scanner-runner-v1`) and the provenance that the service stores (`$defs/provenance`). Version 2 adds the `code_audit` module (the public CLI's engine from its released image), its settings in `codeAudit`, the `codeAuditImage` of the provenance and the stored artifact kinds (`$defs/artifactKind`). Fields that the service writes as null are required and nullable. The service checks the rules between fields (the modules that a subject supports, the inventory prerequisite, the fixed limits of the profile `r1`, `codeAudit` present exactly when `code_audit` is requested, and `code_audit` on a repository only) in code; this schema checks the shape.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "jobId",
+    "parentScanId",
+    "tenantScope",
+    "subject",
+    "requestedModules",
+    "effectiveModules",
+    "profile",
+    "policyVersion",
+    "limits"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "sentrytower-scanner-job-v1" },
+    "jobId": { "type": "string", "format": "uuid" },
+    "parentScanId": { "type": "string", "format": "uuid" },
+    "tenantScope": { "type": "string", "format": "uuid" },
+    "subject": { "$ref": "#/$defs/subject" },
+    "requestedModules": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/module" }
+    },
+    "effectiveModules": {
+      "description": "The requested modules plus their prerequisites: `inventory` runs before `dependency_vulnerability` and `malicious_package` on a repository.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/module" }
+    },
+    "profile": {
+      "description": "The scanner profile. Only `r1` exists.",
+      "type": "string",
+      "minLength": 1
+    },
+    "policyVersion": { "type": "integer", "minimum": 1 },
+    "limits": { "$ref": "#/$defs/limits" },
+    "codeAudit": {
+      "description": "The settings of the `code_audit` module; present exactly when `code_audit` is requested. On the wire it follows `limits` and is absent without the module, so that the request digest of a job without it does not change.",
+      "$ref": "#/$defs/codeAudit"
+    }
+  },
+  "$defs": {
+    "subject": {
+      "title": "ScannerSubject",
+      "oneOf": [
+        { "$ref": "#/$defs/repositorySubject" },
+        { "$ref": "#/$defs/ociImageSubject" }
+      ]
+    },
+    "repositorySubject": {
+      "title": "ScannerRepositorySubject",
+      "type": "object",
+      "required": ["kind", "locator", "revision"],
+      "properties": {
+        "kind": { "const": "repository" },
+        "locator": {
+          "description": "The repository, as `provider:owner/name`.",
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+      }
+    },
+    "ociImageSubject": {
+      "title": "ScannerOciImageSubject",
+      "type": "object",
+      "required": ["kind", "locator", "manifestDigest"],
+      "properties": {
+        "kind": { "const": "oci_image" },
+        "locator": { "type": "string", "minLength": 1 },
+        "manifestDigest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      }
+    },
+    "module": {
+      "title": "ScannerModule",
+      "type": "string",
+      "enum": [
+        "inventory",
+        "dependency_vulnerability",
+        "malicious_package",
+        "secret",
+        "secret_validation",
+        "iac",
+        "image_vulnerability",
+        "code_audit"
+      ]
+    },
+    "limits": {
+      "title": "ScannerLimits",
+      "type": "object",
+      "required": [
+        "maxDownloadBytes",
+        "maxExpandedBytes",
+        "maxFiles",
+        "maxOutputBytes",
+        "toolTimeoutSeconds",
+        "jobTimeoutSeconds"
+      ],
+      "properties": {
+        "maxDownloadBytes": { "type": "integer", "minimum": 0 },
+        "maxExpandedBytes": { "type": "integer", "minimum": 0 },
+        "maxFiles": { "type": "integer", "minimum": 0 },
+        "maxOutputBytes": { "type": "integer", "minimum": 0 },
+        "toolTimeoutSeconds": { "type": "integer", "minimum": 0 },
+        "jobTimeoutSeconds": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "moduleState": {
+      "title": "ScannerModuleState",
+      "type": "string",
+      "enum": ["complete", "failed", "skipped", "canceled"]
+    },
+    "moduleResult": {
+      "title": "ScannerModuleResult",
+      "type": "object",
+      "required": [
+        "module",
+        "state",
+        "tool",
+        "toolVersion",
+        "dataVersion",
+        "findingCount",
+        "durationMs",
+        "errorCode"
+      ],
+      "properties": {
+        "module": { "$ref": "#/$defs/module" },
+        "state": { "$ref": "#/$defs/moduleState" },
+        "tool": { "type": ["string", "null"] },
+        "toolVersion": { "type": ["string", "null"] },
+        "dataVersion": { "type": ["string", "null"] },
+        "findingCount": { "type": "integer", "minimum": 0 },
+        "durationMs": { "type": "integer", "minimum": 0 },
+        "errorCode": { "type": ["string", "null"] }
+      }
+    },
+    "location": {
+      "title": "ScannerLocation",
+      "type": "object",
+      "required": ["path", "startLine", "endLine"],
+      "properties": {
+        "path": { "type": "string" },
+        "startLine": { "type": ["integer", "null"], "minimum": 0 },
+        "endLine": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "findingSource": {
+      "title": "ScannerFindingSource",
+      "type": "object",
+      "required": ["scanner", "scannerVersion", "ruleId", "dataDigest"],
+      "properties": {
+        "scanner": { "type": "string" },
+        "scannerVersion": { "type": ["string", "null"] },
+        "ruleId": { "type": "string" },
+        "dataDigest": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" },
+        "metadata": { "type": "object" }
+      }
+    },
+    "finding": {
+      "title": "ScannerFinding",
+      "description": "A finding as the runner reports it and the `scanner_finding` table stores it. A boundary converts it to the contract Finding.",
+      "type": "object",
+      "required": ["findingType", "fingerprint", "severity", "title", "locations", "details", "sources"],
+      "properties": {
+        "findingType": {
+          "type": "string",
+          "enum": ["dependency_vulnerability", "image_vulnerability", "malicious_package", "secret", "iac"]
+        },
+        "fingerprint": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "severity": { "$ref": "../severity/1.json" },
+        "title": { "type": "string" },
+        "locations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/location" }
+        },
+        "details": {
+          "description": "The details of the tool, for example the package, the advisory identifiers and the fixed versions of a dependency finding.",
+          "type": "object"
+        },
+        "sources": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/findingSource" }
+        }
+      }
+    },
+    "secretValidationState": {
+      "title": "ScannerSecretValidationState",
+      "type": "string",
+      "enum": ["valid", "invalid", "unknown", "not_supported", "not_checked"]
+    },
+    "secretCandidate": {
+      "title": "ScannerSecretCandidate",
+      "description": "A secret that the secret scanner found, before normalization. It holds the secret, so it never leaves the service.",
+      "type": "object",
+      "required": ["ruleId", "description", "path", "startLine", "endLine", "secret"],
+      "properties": {
+        "ruleId": { "type": "string" },
+        "description": { "type": "string" },
+        "path": { "type": "string" },
+        "startLine": { "type": ["integer", "null"], "minimum": 0 },
+        "endLine": { "type": ["integer", "null"], "minimum": 0 },
+        "secret": { "type": "string" }
+      }
+    },
+    "codeAudit": {
+      "title": "ScannerCodeAudit",
+      "description": "One run of the public CLI's engine (`sentrytower audit`). The cap is enforced by the CLI's model gateway before each call.",
+      "type": "object",
+      "required": ["depth", "costCapMicroUsd"],
+      "properties": {
+        "depth": { "type": "string", "enum": ["quick", "standard", "deep", "max"] },
+        "costCapMicroUsd": {
+          "description": "The cost cap of the model calls in millionths of a US dollar, as in Budget: at least 1 and at most 50000000 (50 USD, the cap of the `max` depth).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50000000
+        },
+        "model": {
+          "description": "One model for every role of the CLI (`--model`); absent for the CLI's default model.",
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,127}$"
+        }
+      }
+    },
+    "artifactKind": {
+      "title": "ScannerArtifactKind",
+      "description": "The kinds of the stored artifacts of a job: the inventory exports (`cyclonedx`, `spdx`), the canonical deterministic `findings` and `provenance`, and the outputs of a code audit (`code_audit_findings` is the CLI's findings.json, `code_audit_sarif` its findings.sarif, `code_audit_run` its run.json).",
+      "type": "string",
+      "enum": ["cyclonedx", "spdx", "findings", "provenance", "code_audit_findings", "code_audit_sarif", "code_audit_run"]
+    },
+    "artifactDescriptor": {
+      "title": "ScannerArtifactDescriptor",
+      "type": "object",
+      "required": ["kind", "mediaType", "path"],
+      "properties": {
+        "kind": { "type": "string" },
+        "mediaType": { "type": "string" },
+        "path": { "type": "string" }
+      }
+    },
+    "runnerResult": {
+      "title": "ScannerRunnerResult",
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "modules",
+        "findings",
+        "artifacts",
+        "secretCandidates",
+        "toolVersions",
+        "dataVersion"
+      ],
+      "properties": {
+        "schemaVersion": { "const": "sentrytower-scanner-runner-v1" },
+        "modules": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/moduleResult" }
+        },
+        "findings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/finding" }
+        },
+        "artifacts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/artifactDescriptor" }
+        },
+        "secretCandidates": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/secretCandidate" }
+        },
+        "toolVersions": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "dataVersion": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "provenance": {
+      "title": "ScannerProvenance",
+      "type": "object",
+      "required": ["daemonVersion", "runnerImage", "inputSha256", "tools", "dataDigest", "completedAt"],
+      "properties": {
+        "daemonVersion": { "type": "string" },
+        "runnerImage": { "type": "string" },
+        "inputSha256": { "type": "string" },
+        "tools": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "dataDigest": { "type": ["string", "null"] },
+        "codeAuditImage": {
+          "description": "The digest-pinned CLI image of the `code_audit` module; absent when the job has no code audit.",
+          "type": "string"
+        },
+        "completedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "errorCode": {
+      "title": "ScannerJobErrorCode",
+      "description": "Why a scanner job failed. The application writes `scanner_unavailable` when no scanner claimed the job in time; the service writes the others.",
+      "type": "string",
+      "enum": [
+        "job_contract_invalid",
+        "capability_invalid",
+        "scratch_unavailable",
+        "attempt_timeout",
+        "source_unavailable",
+        "source_throttled",
+        "source_unauthorized",
+        "source_not_found",
+        "source_gone",
+        "source_rejected",
+        "source_origin_invalid",
+        "source_limit_exceeded",
+        "scanner_data_unavailable",
+        "source_integrity_invalid",
+        "source_archive_invalid",
+        "input_processing_failed",
+        "secret_normalization_failed",
+        "artifact_invalid",
+        "runner_setup_failed",
+        "container_runtime_unavailable",
+        "container_timeout",
+        "container_resource_exhausted",
+        "container_failed",
+        "attempt_canceled",
+        "runner_output_invalid",
+        "runner_output_too_large",
+        "attempts_exhausted",
+        "result_persistence_failed",
+        "scanner_unavailable"
+      ]
+    }
+  }
+}

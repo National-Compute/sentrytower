@@ -222,34 +222,43 @@ def open_file(path: Path) -> bool:
 
 
 def from_document(document: Any) -> list[OutputFinding]:
-    """The findings of a ``findings.json`` document (for ``sentrytower last``)."""
+    """The findings of a ``findings.json`` document (for ``sentrytower last``).
+
+    Version 2 holds contract Findings (``findings.from_contract``); a
+    version 1 document of an earlier release still reads.
+    """
+    from ..findings import from_contract
+
+    if not isinstance(document, dict):
+        return []
+    items = [item for item in document.get("findings") or [] if isinstance(item, dict)]
+    if str(document.get("schema_version") or "").startswith("1."):
+        return [_from_version_1(item, position) for position, item in enumerate(items, 1)]
+    return [from_contract(item, position=position) for position, item in enumerate(items, 1)]
+
+
+def _from_version_1(item: dict[str, Any], position: int) -> OutputFinding:
+    """A finding of a ``findings.json`` of version 1 (SentryTower 0.1)."""
     from ..findings import OutputLocation
 
-    out: list[OutputFinding] = []
-    for item in (document or {}).get("findings") or []:
-        if not isinstance(item, dict):
-            continue
-        location = item.get("location") if isinstance(item.get("location"), dict) else None
-        locations = (
-            [OutputLocation(str(location.get("path")), int(location.get("start_line") or 1), int(location.get("end_line") or 1))]
-            if location
-            else []
-        )
-        given = item.get("verification")
-        verification: dict[str, Any] = given if isinstance(given, dict) else {}
-        finding = OutputFinding(
-            rank=int(item.get("rank") or len(out) + 1),
-            title=str(item.get("title") or ""),
-            severity=str(item.get("severity") or "unknown"),
-            cwe=[str(value) for value in item.get("cwe") or []],
-            locations=locations,
-            evidence=str(item.get("evidence") or ""),
-            exploit_conditions=str(item.get("exploit_conditions") or ""),
-            engine=str(item.get("engine") or ""),
-            route=str(item.get("route") or ""),
-            tier=2 if item.get("tier") == 2 else 1,
-            verification_status=str(verification.get("status") or "none"),
-            verification_reason=str(verification["reason"]) if verification.get("reason") else None,
-        )
-        out.append(finding)
-    return out
+    location = item.get("location") if isinstance(item.get("location"), dict) else None
+    start, end = (location.get("start_line"), location.get("end_line")) if location else (None, None)
+    start = start if isinstance(start, int) and not isinstance(start, bool) and start >= 1 else 1
+    end = end if isinstance(end, int) and not isinstance(end, bool) and end >= start else start
+    locations = [OutputLocation(str(location.get("path")), start, end)] if location else []
+    given = item.get("verification")
+    verification: dict[str, Any] = given if isinstance(given, dict) else {}
+    return OutputFinding(
+        rank=int(item["rank"]) if isinstance(item.get("rank"), int) else position,
+        title=str(item.get("title") or ""),
+        severity=str(item.get("severity") or "unknown"),
+        cwe=[str(value) for value in item.get("cwe") or []],
+        locations=locations,
+        evidence=str(item.get("evidence") or ""),
+        exploit_conditions=str(item.get("exploit_conditions") or ""),
+        engine=str(item.get("engine") or ""),
+        route=str(item.get("route") or ""),
+        tier=2 if item.get("tier") == 2 else 1,
+        verification_status=str(verification.get("status") or "none"),
+        verification_reason=str(verification["reason"]) if verification.get("reason") else None,
+    )

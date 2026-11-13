@@ -9,8 +9,66 @@ engine parameters) is always a notable change.
 
 ## [Unreleased]
 
+### Added
+
+- `src/sentrytower/contracts/`: the National Compute data contracts 2.0.0,
+  vendored unchanged from the release `contracts-2.0.0.tar.gz` (SHA-256
+  `1f487323047e627d0d3ed83d8036ab104657a9b370103a325c57c5ac843b1c51`): the
+  JSON Schemas of the shared entities and `nc_contracts`, their mappings
+  in Python (standard library only, so no new runtime dependency). They
+  are licensed Apache-2.0 OR MIT; the OSV schema v1.9.2 in them is
+  Apache-2.0 (see NOTICE). The test suite checks each vendored file
+  against `SHA256SUMS`. `make vendor-contracts BUNDLE=path/to/contracts-<version>.tar.gz`
+  (`scripts/vendor_contracts.py`) vendors a release after it checks the
+  tarball against the `SHA256SUMS` of the release and each file against
+  the `SHA256SUMS` in the tarball.
+
 ### Changed
 
+- **Breaking: `findings.json` is schema version 2.0.0.** Each finding is a
+  `Finding` of the data contracts, version 1, the finding format of the
+  hosted product, so the CLI and the hosted product share one finding
+  format, one severity scale, one evidence ladder and one SARIF mapping.
+  `src/sentrytower/schemas/findings-v2.schema.json` replaces
+  `findings-v1.schema.json` and refers to the contract schema
+  `https://nationalcompute.io/schemas/finding/1.json`. The document keeps
+  `tool`, `run` and `summary`. Migration of a finding (version 1 → version 2):
+  - `id`, `title`, `severity`, `cwe` → the same;
+  - `rank`, `route`, `tier` → `properties.rank`, `properties.route`,
+    `properties.tier`;
+  - `location` (`path`, `start_line`, `end_line`, `note`; null without a
+    location) → `location` (`path`, `startLine`, `endLine`, `note`; left
+    out without a location);
+  - `related_locations` → `relatedLocations` (left out when empty);
+  - `explanation` → `description`;
+  - `evidence` and `exploit_conditions` (text) → `description`, which
+    holds the evidence, then `Exploit conditions:` and the conditions;
+  - `engine` (`free-roaming`, `deep-check`, `single-agent`) →
+    `engine.mode`, with `engine.name` `SentryTower` and `engine.version`;
+  - `confidence` and `verification.keep_score` → `evidence.verification.score`;
+  - `verification.verdict` (`exploitable`, `safe`, `unclear`) →
+    `evidence.verification.outcome` (`supports`, `refutes`, `inconclusive`);
+  - `verification.status`, `verification.reason` →
+    `evidence.verification.status`, `evidence.verification.reason`;
+  - `verification.votes` → `properties.votes`;
+  - `fingerprint` (`sha256:<32 hex digits>`) → `fingerprint.value` (the
+    same 32 hex digits) with `fingerprint.scheme` `sentrytowerFindingHash/v1`,
+    so a history of fingerprints across runs carries over;
+  - new: `kind` (`code`), `evidence.class` (`defective` when a verified
+    majority of the blind verification called the finding exploitable,
+    else `suspected`), `ruleId` (the first CWE), `target` (the audited
+    folder).
+
+  `sentrytower last` and the GitHub Action read both versions; the Action
+  runs the image of its own release unless the input `image` names
+  another. `sentrytower version` names findings schema 2.0.0.
+- `findings.sarif`: each result is the SARIF mapping of the data contracts
+  applied to the finding of `findings.json`. The flat properties stay; the
+  property `nationalcompute/finding` adds the fields of the finding that
+  SARIF has no place for (kind, title, engine, rule, evidence, target), so
+  a reader of the contracts gets the finding back from the result. The
+  primary location carries its note as its message, and a verified slice
+  finding has the property `votes`.
 - The agent engine runs the Pi coding agent 1.5.0 (was 0.84.1): the
   container image, `docker/pi/package-lock.json`, the version that
   `sentrytower doctor` and `install.sh` check, and the install commands of

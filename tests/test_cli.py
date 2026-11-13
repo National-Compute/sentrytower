@@ -16,7 +16,6 @@ from sentrytower.cli import main
 from sentrytower.policies import DEFAULT_MODEL
 from synthetic import WEBAPP, counted_files, line_of
 
-SCHEMA = Path(__file__).resolve().parents[1] / "src" / "sentrytower" / "schemas" / "findings-v1.schema.json"
 SARIF_SCHEMA = Path(__file__).resolve().parent / "data" / "sarif-schema-2.1.0.json"
 _READ = line_of(WEBAPP, "files.py", "def read")
 FREE_ANSWER = {
@@ -84,7 +83,9 @@ def test_audit_with_a_bad_format_exits_2(cli_env, write_repo) -> None:
 
 
 @pytest.mark.slow
-def test_audit_through_a_local_endpoint_writes_each_output(cli_env, write_repo, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_audit_through_a_local_endpoint_writes_each_output(
+    cli_env, write_repo, monkeypatch: pytest.MonkeyPatch, findings_validator
+) -> None:
     monkeypatch.setenv("FAKE_PI_FREE_ANSWER", json.dumps(FREE_ANSWER))
     fake = FakeModel(cost=0.0001)
     out = cli_env.base / "out"
@@ -93,7 +94,7 @@ def test_audit_through_a_local_endpoint_writes_each_output(cli_env, write_repo, 
     assert code == 0
     assert sorted(path.name for path in out.iterdir()) == ["findings.json", "findings.sarif", "report.html", "report.md", "run.json"]
     findings = json.loads((out / "findings.json").read_text())
-    jsonschema.Draft202012Validator(json.loads(SCHEMA.read_text())).validate(findings)
+    findings_validator.validate(findings)
     sarif = json.loads((out / "findings.sarif").read_text())
     jsonschema.Draft4Validator(json.loads(SARIF_SCHEMA.read_text())).validate(sarif)
     run = json.loads((out / "run.json").read_text())
@@ -109,7 +110,15 @@ def test_audit_through_a_local_endpoint_writes_each_output(cli_env, write_repo, 
         and run["budget"]["depth_factor"] == 1.0
     )
     assert run["result"]["status"] == "complete" and run["result"]["calls"]["total"] == len(fake.bodies)
-    assert findings["schema_version"] == "1.0.0" and findings["run"]["result"] == run["result"]
+    assert findings["schema_version"] == "2.0.0" and findings["run"]["result"] == run["result"]
+    finding = next(item for item in findings["findings"] if item["engine"]["mode"] == "free-roaming")
+    assert finding["title"] == "Path traversal" and finding["evidence"] == {"class": "suspected", "verification": {"status": "none"}}
+    assert (
+        finding["location"] == {"path": "files.py", "startLine": _READ, "endLine": _READ + 2}
+        and finding["description"] == "e\n\nExploit conditions: c"
+    )
+    fingerprints = [result["partialFingerprints"]["sentrytowerFindingHash/v1"] for result in sarif["runs"][0]["results"]]
+    assert fingerprints == [item["fingerprint"]["value"] for item in findings["findings"] if "location" in item]
     page = (out / "report.html").read_text()
     assert page.startswith("<!doctype html>") and "<script" not in page
     assert all(html.escape(item["title"]) in page for item in findings["findings"]) and page.count("<article ") == len(findings["findings"])

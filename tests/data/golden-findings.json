@@ -1,0 +1,195 @@
+{
+  "$schema": "https://raw.githubusercontent.com/National-Compute/sentrytower/main/src/sentrytower/schemas/findings-v2.schema.json",
+  "schema_version": "2.0.0",
+  "tool": {
+    "name": "SentryTower",
+    "version": "<version>"
+  },
+  "run": {
+    "id": "00000000000000000000000000000000",
+    "route": "funnel",
+    "started_at": "2026-10-22T10:00:00+00:00",
+    "repository": "webapp",
+    "files_counted": 412
+  },
+  "summary": {
+    "findings": 4,
+    "by_severity": {
+      "critical": 1,
+      "high": 1,
+      "medium": 0,
+      "low": 1,
+      "unknown": 1
+    }
+  },
+  "findings": [
+    {
+      "id": "ST-001",
+      "fingerprint": {
+        "scheme": "sentrytowerFindingHash/v1",
+        "value": "c37f70f0ad0617cbd6d6b15aa9435059"
+      },
+      "kind": "code",
+      "title": "Path traversal in read",
+      "description": "`open(os.path.join(BASE, name))`\n\nExploit conditions: ../ in the name.",
+      "severity": "high",
+      "evidence": {
+        "class": "suspected",
+        "verification": {
+          "status": "none"
+        }
+      },
+      "engine": {
+        "name": "SentryTower",
+        "version": "<version>",
+        "mode": "free-roaming"
+      },
+      "ruleId": "CWE-22",
+      "target": {
+        "kind": "repository",
+        "locator": "webapp"
+      },
+      "location": {
+        "path": "files.py",
+        "startLine": 51,
+        "endLine": 53,
+        "note": "open"
+      },
+      "cwe": [
+        "CWE-22"
+      ],
+      "properties": {
+        "rank": 1,
+        "route": "funnel",
+        "tier": 1
+      }
+    },
+    {
+      "id": "ST-002",
+      "fingerprint": {
+        "scheme": "sentrytowerFindingHash/v1",
+        "value": "11fc1767c6c75dc0cae94dd615e830b1"
+      },
+      "kind": "code",
+      "title": "Command injection | in ping",
+      "description": "The host goes to the shell.",
+      "severity": "critical",
+      "evidence": {
+        "class": "defective",
+        "verification": {
+          "status": "verified",
+          "method": "blind-vote",
+          "outcome": "supports",
+          "score": 0.82
+        }
+      },
+      "engine": {
+        "name": "SentryTower",
+        "version": "<version>",
+        "mode": "deep-check"
+      },
+      "ruleId": "CWE-78",
+      "target": {
+        "kind": "repository",
+        "locator": "webapp"
+      },
+      "location": {
+        "path": "app.py",
+        "startLine": 60,
+        "endLine": 60
+      },
+      "relatedLocations": [
+        {
+          "path": "app.py",
+          "startLine": 57,
+          "endLine": 59,
+          "note": "the route"
+        }
+      ],
+      "cwe": [
+        "CWE-78",
+        "CWE-77"
+      ],
+      "properties": {
+        "rank": 2,
+        "route": "funnel",
+        "tier": 1
+      }
+    },
+    {
+      "id": "ST-003",
+      "fingerprint": {
+        "scheme": "sentrytowerFindingHash/v1",
+        "value": "b56d563fbf695f72841e513fcc7a485f"
+      },
+      "kind": "code",
+      "title": "Unclassified issue",
+      "description": "e\n\nExploit conditions: c",
+      "severity": "low",
+      "evidence": {
+        "class": "suspected",
+        "verification": {
+          "status": "verified",
+          "method": "blind-vote",
+          "outcome": "inconclusive",
+          "score": 0.4
+        }
+      },
+      "engine": {
+        "name": "SentryTower",
+        "version": "<version>",
+        "mode": "deep-check"
+      },
+      "target": {
+        "kind": "repository",
+        "locator": "webapp"
+      },
+      "location": {
+        "path": "lib/x.js",
+        "startLine": 4,
+        "endLine": 4
+      },
+      "cwe": [],
+      "properties": {
+        "rank": 3,
+        "route": "funnel",
+        "tier": 1
+      }
+    },
+    {
+      "id": "ST-004",
+      "fingerprint": {
+        "scheme": "sentrytowerFindingHash/v1",
+        "value": "ca011ccb0b56ca52b75a59e4cc26fbd7"
+      },
+      "kind": "code",
+      "title": "No location",
+      "description": "e",
+      "severity": "unknown",
+      "evidence": {
+        "class": "suspected",
+        "verification": {
+          "status": "none"
+        }
+      },
+      "engine": {
+        "name": "SentryTower",
+        "version": "<version>",
+        "mode": "single-agent"
+      },
+      "ruleId": "CWE-200",
+      "target": {
+        "kind": "repository",
+        "locator": "webapp"
+      },
+      "cwe": [
+        "CWE-200"
+      ],
+      "properties": {
+        "rank": 4,
+        "route": "agent",
+        "tier": 1
+      }
+    }
+  ]
+}

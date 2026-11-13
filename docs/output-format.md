@@ -5,7 +5,7 @@ default `./sentrytower-results`):
 
 | File | Format | For |
 | --- | --- | --- |
-| `findings.json` | JSON, schema version 1.0.0 | Tools and scripts |
+| `findings.json` | JSON, schema version 2.0.0: each finding a Finding of the data contracts | Tools and scripts |
 | `findings.sarif` | SARIF 2.1.0 | GitHub code scanning and other SARIF viewers |
 | `report.md` | Markdown | People, in a ticket or a job summary |
 | `report.html` | HTML | People, in a browser |
@@ -64,14 +64,21 @@ interrupted run ([exit codes](configuration.md#exit-codes)).
 ## findings.json
 
 The JSON Schema is
-[`src/sentrytower/schemas/findings-v1.schema.json`](../src/sentrytower/schemas/findings-v1.schema.json).
-A minor version (1.x) adds optional fields, and a field keeps its meaning
-within version 1.
+[`src/sentrytower/schemas/findings-v2.schema.json`](../src/sentrytower/schemas/findings-v2.schema.json).
+Each finding is a `Finding` of the National Compute data contracts, version
+1: the one finding format of SentryTower, the CLI and the hosted product,
+with one severity scale, one evidence ladder and one mapping to SARIF. Its
+schema is
+[`src/sentrytower/contracts/schemas/finding/1.json`](../src/sentrytower/contracts/schemas/finding/1.json)
+(`$id` `https://nationalcompute.io/schemas/finding/1.json`); the findings
+schema adds what SentryTower guarantees beyond it. A minor version (2.x)
+adds optional fields, and a field keeps its meaning within version 2. A
+reader ignores the fields that it does not know.
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/National-Compute/sentrytower/v1/src/sentrytower/schemas/findings-v1.schema.json",
-  "schema_version": "1.0.0",
+  "$schema": "https://raw.githubusercontent.com/National-Compute/sentrytower/main/src/sentrytower/schemas/findings-v2.schema.json",
+  "schema_version": "2.0.0",
   "tool": {"name": "SentryTower", "version": "0.1.1"},
   "run": {
     "id": "5f0c3b1e9d2a4c7f8e6b1a2d3c4e5f60",
@@ -97,68 +104,87 @@ within version 1.
   "findings": [
     {
       "id": "ST-001",
-      "rank": 1,
+      "fingerprint": {"scheme": "sentrytowerFindingHash/v1", "value": "337ab3133333efa8483a144d4fb131ff"},
+      "kind": "code",
       "title": "Command injection in ping",
+      "description": "The host parameter goes to os.system without a check.\n\nExploit conditions: The attacker controls the host parameter.",
       "severity": "critical",
+      "evidence": {"class": "suspected", "verification": {"status": "none"}},
+      "engine": {"name": "SentryTower", "version": "0.1.1", "mode": "free-roaming"},
+      "ruleId": "CWE-78",
+      "target": {"kind": "repository", "locator": "webapp"},
+      "location": {"path": "app.py", "startLine": 60, "endLine": 60},
+      "relatedLocations": [{"path": "app.py", "startLine": 57, "endLine": 59, "note": "the route takes the host"}],
       "cwe": ["CWE-78"],
-      "location": {"path": "app.py", "start_line": 60, "end_line": 60},
-      "related_locations": [{"path": "app.py", "start_line": 57, "end_line": 59, "note": "the route takes the host"}],
-      "explanation": "The host parameter goes to os.system without a check.\n\nExploit conditions: The attacker controls the host parameter.",
-      "evidence": "The host parameter goes to os.system without a check.",
-      "exploit_conditions": "The attacker controls the host parameter.",
-      "engine": "free-roaming",
-      "route": "funnel",
-      "confidence": null,
-      "verification": {"verdict": null, "keep_score": null, "status": "none", "reason": null},
-      "tier": 1,
-      "fingerprint": "sha256:337ab3133333efa8483a144d4fb131ff"
+      "properties": {"rank": 1, "route": "funnel", "tier": 1}
     },
     {
       "id": "ST-002",
-      "rank": 2,
+      "fingerprint": {"scheme": "sentrytowerFindingHash/v1", "value": "c37f70f0ad0617cbd6d6b15aa9435059"},
+      "kind": "code",
       "title": "Path traversal in read",
+      "description": "open(os.path.join(BASE, name)) takes the name of the request.\n\nExploit conditions: The attacker sends ../ in the name.",
       "severity": "high",
+      "evidence": {
+        "class": "defective",
+        "verification": {"status": "verified", "method": "blind-vote", "outcome": "supports", "score": 0.84}
+      },
+      "engine": {"name": "SentryTower", "version": "0.1.1", "mode": "deep-check"},
+      "ruleId": "CWE-22",
+      "target": {"kind": "repository", "locator": "webapp"},
+      "location": {"path": "files.py", "startLine": 51, "endLine": 53},
       "cwe": ["CWE-22"],
-      "location": {"path": "files.py", "start_line": 51, "end_line": 53},
-      "related_locations": [],
-      "explanation": "open(os.path.join(BASE, name)) takes the name of the request.\n\nExploit conditions: The attacker sends ../ in the name.",
-      "evidence": "open(os.path.join(BASE, name)) takes the name of the request.",
-      "exploit_conditions": "The attacker sends ../ in the name.",
-      "engine": "deep-check",
-      "route": "funnel",
-      "confidence": 0.84,
-      "verification": {"verdict": "exploitable", "keep_score": 0.84, "status": "verified", "reason": null},
-      "tier": 1,
-      "fingerprint": "sha256:c37f70f0ad0617cbd6d6b15aa9435059"
+      "properties": {"rank": 2, "route": "funnel", "tier": 1}
     }
   ]
 }
 ```
+
+`summary.by_severity` counts the five severities that SentryTower gives.
 
 ### Fields of a finding
 
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `id` | string | `ST-001`, `ST-002`, … in rank order (unique in the run, not across runs) |
-| `rank` | integer | The place in the ranked output of the run |
+| `fingerprint` | object | `scheme` `sentrytowerFindingHash/v1`; `value`, 32 hex digits of the SHA-256 of the file, the first CWE and the title: a stable identity across runs while the line numbers change |
+| `kind` | `code` | A weakness in the source code |
 | `title` | string | A short name of the vulnerability (at most 300 characters) |
-| `severity` | `critical`, `high`, `medium`, `low`, `unknown` | The severity that the engine gave; `unknown` when the answer gave none |
+| `description` | string | The code at the locations and why it is vulnerable, then `Exploit conditions:` and what an attacker must control and can then do; left out when the engine gave neither |
+| `severity` | `critical`, `high`, `medium`, `low`, `unknown` | The severity that the engine gave; `unknown` when the answer gave none. The contract's `info` never occurs |
+| `evidence` | object | How far the proof went: `class` and `verification` ([evidence](#evidence)) |
+| `engine` | object | `name` `SentryTower`, its `version`, and `mode`: the engine that found the finding ([engines](#engines)) |
+| `ruleId` | string | The first CWE; left out when the finding has no CWE (its SARIF rule is `SENTRYTOWER-UNCLASSIFIED`) |
+| `target` | object | `kind` `repository`; `locator`, the name of the audited folder |
+| `location` | object | The primary location: the critical operation. `path` is relative to the audited folder with `/` separators; `startLine` and `endLine` are 1-based and inclusive; `note` when the engine gave one. Left out when the engine gave no valid location |
+| `relatedLocations` | list | Up to 3 more locations in the order of the engine (for example the source of the data, the route); each can have a `note`. Left out when there is none |
 | `cwe` | list of strings | CWE identifiers (`CWE-<n>`, no leading zeros), the most specific first; can be empty |
-| `location` | object or null | The primary location: the critical operation. `path` is relative to the repository root with `/` separators; `start_line` and `end_line` are 1-based and inclusive; `note` when the engine gave one. Null when the engine gave no valid location |
-| `related_locations` | list | Up to 3 more locations in the order of the engine (for example the source of the data, the route); each can have a `note` |
-| `explanation` | string | The evidence and the exploit conditions as one text |
-| `evidence` | string | The code at the locations and why it is vulnerable |
-| `exploit_conditions` | string | What an attacker must control, and what the attacker can then do |
-| `engine` | `free-roaming`, `deep-check`, `single-agent` | The engine that found it (see below) |
-| `route` | `funnel`, `agent` | The route of the run |
-| `confidence` | number or null | The keep score (0 to 1) of the blind verification of a deep-check finding or of a verified slice finding; null for the other findings |
-| `verification` | object | `status`: `verified`; `unverified` when the verification failed, was refused or did not run, with a short `reason`; `none` when the route does not verify the source of the finding (the free-roaming session, the single agent). `verdict` (`exploitable`, `safe`, `unclear` or null) and `keep_score` of the verification; `votes`, the verdicts of the three votes of a slice finding |
-| `tier` | 1 or 2 | 1: the findings of the standard selection; 2: the further findings of a deeper run, under the label "preview: more checks; effect on findings not yet measured" |
-| `fingerprint` | string | `sha256:` and 32 hex digits of the file, the first CWE and the title: a stable identity across runs while the line numbers change |
+| `properties` | object | `rank`: the place in the ranked output of the run; `route`: `funnel` or `agent`; `tier`: 1 for the findings of the standard selection, 2 for the further findings of a deeper run, under the label "preview: more checks; effect on findings not yet measured"; `votes`: the verdicts of the three votes of a verified slice finding |
+
+### Evidence
+
+The evidence class is one step of a ladder that all engines of National
+Compute share, from the strongest: `reproduced`, `reachable`, `defective`,
+`suspected`. The blind verification of SentryTower reads the code and votes;
+it never executes a claim. So a SentryTower finding has one of the two
+lower classes:
+
+| `evidence.class` | When |
+| --- | --- |
+| `defective` | A verified majority of the blind verification called the finding exploitable |
+| `suspected` | Every other finding: the votes called it safe or unclear, the verification failed or did not run, or the engine does not verify its findings |
+
+| `evidence.verification` | Meaning |
+| --- | --- |
+| `status` | `verified`; `unverified` when the verification failed, was refused or did not run, with a short `reason`; `none` when the route does not verify the source of the finding (the free-roaming session, the single agent) |
+| `method` | `blind-vote` when the verification gave a verdict or a score |
+| `outcome` | The verdict of the votes: `supports` (exploitable), `refutes` (safe) or `inconclusive` (unclear) |
+| `score` | The keep score of the verification, from 0 to 1 |
+| `reason` | Why an `unverified` finding has no verification |
 
 ### Engines
 
-| Engine | Route | Meaning |
+| `engine.mode` | Route | Meaning |
 | --- | --- | --- |
 | `free-roaming` | funnel | The agent session of the funnel on the whole repository. Its findings come first in the output, in the order of the agent, with the locations that the agent gave |
 | `deep-check` | funnel | An agent session of the funnel on one code unit with a lead (in a deeper run, also the sweep and the focus sessions). The first location is the resolved critical-operation line; the findings rank by their verification score |
@@ -170,7 +196,7 @@ it: first the findings that the majority of their verification votes calls
 "exploitable", then those whose verification did not run. On the agent
 route, the findings of the whole-repository session are tier 1, and the
 findings of the slices are tier 2. A finding without a verification stays
-in the output with the status `unverified` and its reason.
+in the output with the verification status `unverified` and its reason.
 
 ### How the locations are read
 
@@ -179,14 +205,48 @@ keeps each valid location in the order of the agent and records each
 deviation from the answer schema: a path alias (`file`, `file_path`), a line
 alias (`line`, `lines`, `line_range`), a `path:N` suffix, and a reversed
 range. A path that starts with the repository folder becomes relative to the
-repository root. A finding without a valid location stays a finding, with
-`location: null`.
+repository root. A finding without a valid location stays a finding,
+without `location`.
+
+### Version 1
+
+SentryTower 0.1.x writes version 1.0.0, whose findings have the fields of
+SentryTower itself (for example `start_line`, `explanation` and a string
+`engine`); [the change log](../CHANGELOG.md) maps each field to version 2.
+The fingerprint value is the same digest in both versions (version 1 writes
+it as `sha256:` and the 32 hex digits), so a program that tracks findings
+across runs keeps its history. `sentrytower last` and the GitHub Action
+read both versions.
+
+### Validate findings.json
+
+The findings schema refers to the contract schemas by their `$id`. A
+validator loads them from `src/sentrytower/contracts/schemas/`;
+`sentrytower.contracts.schema_documents()` returns each one by its `$id`.
+With the `jsonschema` package:
+
+```python
+import json
+import jsonschema
+import referencing
+from referencing.jsonschema import DRAFT202012
+from sentrytower.contracts import schema_documents
+
+registry = referencing.Registry().with_resources(
+    (uri, DRAFT202012.create_resource(document)) for uri, document in schema_documents().items()
+)
+schema = json.load(open("src/sentrytower/schemas/findings-v2.schema.json"))
+jsonschema.Draft202012Validator(schema, registry=registry).validate(json.load(open("findings.json")))
+```
 
 ## findings.sarif
 
 The SARIF file follows [SARIF 2.1.0](https://docs.oasis-open.org/sarif/sarif/v2.1.0/) and the
 [GitHub code scanning requirements](https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning).
-The test suite validates it against the OASIS JSON Schema.
+The test suite validates it against the OASIS JSON Schema. Each result is
+the SARIF mapping of the data contracts applied to the finding of
+`findings.json`, so a reader of the contracts gets the finding back from
+the result.
 
 | SARIF | From |
 | --- | --- |
@@ -195,11 +255,12 @@ The test suite validates it against the OASIS JSON Schema.
 | `rules[].properties.security-severity` | The highest severity of the findings of the rule: critical 9.5, high 8.0, medium 5.5, low 3.0 (GitHub shows it as the alert severity) |
 | `results[].ruleId`, `ruleIndex` | The first CWE of the finding |
 | `results[].level` | `error` for critical and high, `warning` for medium and unknown, `note` for low |
-| `results[].message.text` | The title, then the explanation |
-| `results[].locations[0]` | The primary location: `artifactLocation.uri` relative to `%SRCROOT%` (percent-encoded, with the `--sarif-path-prefix` folder in front), `region.startLine` and `endLine` |
+| `results[].message.text` | The title, then the description |
+| `results[].locations[0]` | The primary location: `artifactLocation.uri` relative to `%SRCROOT%` (percent-encoded, with the `--sarif-path-prefix` folder in front), `region.startLine` and `endLine`, the note as the message |
 | `results[].relatedLocations[]` | The related locations, with their notes |
-| `results[].partialFingerprints` | `sentrytowerFindingHash/v1`: the fingerprint of the finding |
-| `results[].properties` | `id`, `rank`, `severity`, `security-severity`, `cwe`, `engine`, `route`, `tier` (1 or 2), `verification` (`verified`, `unverified` or `none`); `confidence` when the finding has a keep score; `verificationReason` for an unverified finding |
+| `results[].partialFingerprints` | `sentrytowerFindingHash/v1`: the fingerprint value of the finding |
+| `results[].properties` | `id`, `rank`, `severity`, `security-severity`, `cwe`, `engine` (the mode), `route`, `tier` (1 or 2), `verification` (the status: `verified`, `unverified` or `none`); `confidence` (the score) when the finding has one; `verificationReason` for an unverified finding; `votes` for a verified slice finding |
+| `results[].properties["nationalcompute/finding"]` | The fields of the finding that SARIF has no place for: `kind`, `title`, `engine`, `ruleId`, `evidence`, `target` |
 | `runs[0].automationDetails.id` | `<category>/` (`--sarif-category`, default `sentrytower`): one category for each audit, so a repository that crosses the size threshold keeps its alerts, and two audits of one repository keep theirs |
 | `runs[0].properties` | `route`, `filesCounted`, `findingsWithoutLocation`, `models` |
 

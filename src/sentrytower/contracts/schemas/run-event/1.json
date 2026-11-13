@@ -1,0 +1,200 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nationalcompute.io/schemas/run-event/1.json",
+  "title": "RunEvent",
+  "description": "One event of a run, in the order of the run. The envelope is the same for every kind. `$defs/payloads` is the registry of kinds: each registered kind has one payload schema, and this schema checks the payload of a registered kind. A kind that is not registered is valid, and its payload is not checked; a reader ignores kinds that it does not know. Registering a new kind is an optional addition within a major version. An export of the events of a run as NDJSON writes one RunEvent on each line, in sequence order.",
+  "type": "object",
+  "required": ["runId", "sequence", "time", "kind", "payload"],
+  "properties": {
+    "runId": { "type": "string", "minLength": 1 },
+    "sequence": {
+      "description": "The position of the event in its run. It increases by at least one from each event to the next, so a reader resumes after the last sequence it holds.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "time": { "type": "string", "format": "date-time" },
+    "kind": {
+      "description": "The kind of event, as `area.event`.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+    },
+    "subject": {
+      "description": "The identifier of the item that the event is about, for example an advisory, a finding or a candidate.",
+      "type": "string",
+      "minLength": 1
+    },
+    "agent": { "$ref": "#/$defs/agentRef" },
+    "payload": { "type": "object" }
+  },
+  "allOf": [
+    { "if": { "required": ["kind"], "properties": { "kind": { "const": "run.status" } } }, "then": { "properties": { "payload": { "$ref": "#/$defs/runStatus" } } } },
+    { "if": { "required": ["kind"], "properties": { "kind": { "const": "run.done" } } }, "then": { "properties": { "payload": { "$ref": "#/$defs/runDone" } } } },
+    { "if": { "required": ["kind"], "properties": { "kind": { "const": "agent.narration" } } }, "then": { "properties": { "payload": { "$ref": "#/$defs/agentNarration" } } } },
+    { "if": { "required": ["kind"], "properties": { "kind": { "const": "agent.tool" } } }, "then": { "properties": { "payload": { "$ref": "#/$defs/agentTool" } } } },
+    { "if": { "required": ["kind"], "properties": { "kind": { "const": "agent.denied" } } }, "then": { "properties": { "payload": { "$ref": "#/$defs/agentDenied" } } } },
+    { "if": { "required": ["kind"], "properties": { "kind": { "const": "finding.proposed" } } }, "then": { "properties": { "payload": { "$ref": "#/$defs/findingProposed" } } } },
+    { "if": { "required": ["kind"], "properties": { "kind": { "const": "gate.decided" } } }, "then": { "properties": { "payload": { "$ref": "../gate-decision/1.json" } } } },
+    { "if": { "required": ["kind"], "properties": { "kind": { "const": "oracle.result" } } }, "then": { "properties": { "payload": { "$ref": "../oracle-result/1.json" } } } },
+    { "if": { "required": ["kind"], "properties": { "kind": { "const": "review.decided" } } }, "then": { "properties": { "payload": { "$ref": "../review-decision/1.json" } } } },
+    { "if": { "required": ["kind"], "properties": { "kind": { "const": "retest.completed" } } }, "then": { "properties": { "payload": { "$ref": "../retest-outcome/1.json" } } } },
+    { "if": { "required": ["kind"], "properties": { "kind": { "const": "advisory.arrived" } } }, "then": { "properties": { "payload": { "$ref": "#/$defs/advisoryArrived" } } } },
+    { "if": { "required": ["kind"], "properties": { "kind": { "const": "exposure.opened" } } }, "then": { "properties": { "payload": { "$ref": "../exposure/1.json" } } } },
+    { "if": { "required": ["kind"], "properties": { "kind": { "const": "exposure.closed" } } }, "then": { "properties": { "payload": { "$ref": "../exposure/1.json" } } } },
+    { "if": { "required": ["kind"], "properties": { "kind": { "const": "candidate.frozen" } } }, "then": { "properties": { "payload": { "$ref": "../fix-candidate/1.json" } } } },
+    { "if": { "required": ["kind"], "properties": { "kind": { "const": "candidate.rejected" } } }, "then": { "properties": { "payload": { "$ref": "#/$defs/candidateRejected" } } } },
+    { "if": { "required": ["kind"], "properties": { "kind": { "const": "approval.recorded" } } }, "then": { "properties": { "payload": { "$ref": "../approval/1.json" } } } },
+    { "if": { "required": ["kind"], "properties": { "kind": { "const": "release.published" } } }, "then": { "properties": { "payload": { "$ref": "../release/1.json" } } } },
+    { "if": { "required": ["kind"], "properties": { "kind": { "const": "ring.deployed" } } }, "then": { "properties": { "payload": { "$ref": "#/$defs/ringDeployed" } } } },
+    { "if": { "required": ["kind"], "properties": { "kind": { "const": "observation.recorded" } } }, "then": { "properties": { "payload": { "$ref": "../observation/1.json" } } } }
+  ],
+  "$defs": {
+    "payloads": {
+      "title": "RunEventPayloads",
+      "description": "The registry of kinds: the payload of each registered kind.",
+      "type": "object",
+      "properties": {
+        "run.status": { "$ref": "#/$defs/runStatus" },
+        "run.done": { "$ref": "#/$defs/runDone" },
+        "agent.narration": { "$ref": "#/$defs/agentNarration" },
+        "agent.tool": { "$ref": "#/$defs/agentTool" },
+        "agent.denied": { "$ref": "#/$defs/agentDenied" },
+        "finding.proposed": { "$ref": "#/$defs/findingProposed" },
+        "gate.decided": { "$ref": "../gate-decision/1.json" },
+        "oracle.result": { "$ref": "../oracle-result/1.json" },
+        "review.decided": { "$ref": "../review-decision/1.json" },
+        "retest.completed": { "$ref": "../retest-outcome/1.json" },
+        "advisory.arrived": { "$ref": "#/$defs/advisoryArrived" },
+        "exposure.opened": { "$ref": "../exposure/1.json" },
+        "exposure.closed": { "$ref": "../exposure/1.json" },
+        "candidate.frozen": { "$ref": "../fix-candidate/1.json" },
+        "candidate.rejected": { "$ref": "#/$defs/candidateRejected" },
+        "approval.recorded": { "$ref": "../approval/1.json" },
+        "release.published": { "$ref": "../release/1.json" },
+        "ring.deployed": { "$ref": "#/$defs/ringDeployed" },
+        "observation.recorded": { "$ref": "../observation/1.json" }
+      }
+    },
+    "agentRef": {
+      "title": "AgentRef",
+      "description": "The agent that produced the event, in a run with more than one agent.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "slot": {
+          "description": "The position of the agent in the run, from 0.",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "runStatus": {
+      "title": "RunStatusPayload",
+      "description": "The run entered a phase.",
+      "type": "object",
+      "required": ["phase"],
+      "properties": { "phase": { "type": "string", "minLength": 1 } }
+    },
+    "runDone": {
+      "title": "RunDonePayload",
+      "description": "The run ended. This is the last event of the run.",
+      "type": "object",
+      "properties": {
+        "status": {
+          "description": "How the run ended, for example `complete`, `incomplete`, `failed` or `interrupted`.",
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "description": "Why the run stopped, for example `done`, `budget` or `wall-clock`.",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "agentNarration": {
+      "title": "AgentNarrationPayload",
+      "description": "Prose that an agent wrote for the reader. It never contains customer prompt or response content.",
+      "type": "object",
+      "required": ["text"],
+      "properties": { "text": { "type": "string" } }
+    },
+    "agentTool": {
+      "title": "AgentToolPayload",
+      "description": "An agent used a tool.",
+      "type": "object",
+      "required": ["tool"],
+      "properties": {
+        "tool": { "type": "string", "minLength": 1 },
+        "target": { "type": "string" },
+        "paths": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "agentDenied": {
+      "title": "AgentDeniedPayload",
+      "description": "The host refused a tool call of an agent.",
+      "type": "object",
+      "properties": {
+        "tool": { "type": "string", "minLength": 1 },
+        "target": { "type": "string" },
+        "text": { "type": "string" }
+      }
+    },
+    "findingProposed": {
+      "title": "FindingProposedPayload",
+      "description": "An engine proposed a finding. The finding is not admitted yet.",
+      "type": "object",
+      "required": ["title", "severity"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "severity": { "$ref": "../severity/1.json" },
+        "cwe": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^CWE-[1-9][0-9]*$" }
+        },
+        "location": { "$ref": "../finding/1.json#/$defs/location" }
+      }
+    },
+    "advisoryArrived": {
+      "title": "AdvisoryArrivedPayload",
+      "description": "An advisory arrived from a feed.",
+      "type": "object",
+      "required": ["advisory"],
+      "properties": {
+        "advisory": { "type": "string", "minLength": 1 },
+        "aliases": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "candidateRejected": {
+      "title": "CandidateRejectedPayload",
+      "description": "A person rejected a fix candidate.",
+      "type": "object",
+      "required": ["candidate", "by", "reason"],
+      "properties": {
+        "candidate": { "type": "string", "minLength": 1 },
+        "by": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "ringDeployed": {
+      "title": "RingDeployedPayload",
+      "description": "One host of a ring deployed a release. `ok`: the host runs the release and its checks pass. `failed`: the deploy failed. `needs_decision`: the host needs a person to decide. `rolled_back`: the host rolled back by itself.",
+      "type": "object",
+      "required": ["ring", "release", "host", "result"],
+      "properties": {
+        "ring": { "type": "string", "minLength": 1 },
+        "release": { "type": "string", "minLength": 1 },
+        "host": { "type": "string", "minLength": 1 },
+        "result": { "type": "string", "enum": ["ok", "failed", "needs_decision", "rolled_back"] },
+        "seconds": { "type": "number", "minimum": 0 },
+        "approvedBy": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

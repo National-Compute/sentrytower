@@ -1,0 +1,16 @@
+National Compute data contracts
+Copyright 2026 National Compute
+
+This directory is licensed under the Apache License, Version 2.0
+(LICENSE-APACHE) or the MIT License (LICENSE-MIT), at your option.
+
+-------------------------------------------------------------------------------
+Third-party material
+-------------------------------------------------------------------------------
+
+OSV schema (schemas/vendor/osv-schema/v1.9.2/schema.json)
+  Source: https://github.com/ossf/osv-schema, release v1.9.2,
+          commit c8a57bdc5b0bc54646e140cabbb7834bd0b5aec9, validation/schema.json
+  SHA-256: 15b10dbb4c4e31c7aae11d22cdd991a9a374758db7c8389e62b3cc37cac92653
+  License: Apache License, Version 2.0 (schemas/vendor/osv-schema/LICENSE)
+  The file is an unmodified copy. schemas/advisory/1.json refers to it.

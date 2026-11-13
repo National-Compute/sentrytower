@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nationalcompute.io/schemas/oracle-result/1.json",
+  "title": "OracleResult",
+  "description": "The result of one execution of the check of a finding. `reproduced`: the check ran and showed the expected effect. `refuted`: the check ran cleanly and the effect did not appear. `inconclusive`: the check ran and the result does not decide. `not_applicable`: the check did not run, for example because the application did not start or the command is not permitted; that is evidence about the environment, not about the finding. Only `reproduced` promotes a finding to the evidence class `reproduced`.",
+  "type": "object",
+  "required": ["finding", "verdict"],
+  "properties": {
+    "finding": { "$ref": "../finding/1.json#/$defs/fingerprint" },
+    "check": { "$ref": "../finding/1.json#/$defs/check" },
+    "verdict": {
+      "type": "string",
+      "enum": ["reproduced", "refuted", "inconclusive", "not_applicable"]
+    },
+    "reason": {
+      "description": "Why the check did not run, or why the result does not decide.",
+      "type": "string"
+    },
+    "command": {
+      "description": "The command as the runner received it. It can differ from the command of the check, because a test check is translated into the invocation of its repository.",
+      "type": "string"
+    },
+    "exitCode": { "type": ["integer", "null"] },
+    "durationMs": { "type": "integer", "minimum": 0 },
+    "receipt": { "$ref": "../evidence/1.json#/$defs/receiptRef" },
+    "at": { "type": "string", "format": "date-time" }
+  },
+  "if": {
+    "required": ["verdict"],
+    "properties": { "verdict": { "const": "not_applicable" } }
+  },
+  "then": { "required": ["reason"] }
+}

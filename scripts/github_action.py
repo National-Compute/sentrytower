@@ -17,10 +17,13 @@ step writes the outputs ``visibility``, ``public``, ``details``,
 
 ``report`` reads ``run.json`` and ``findings.json`` of the audit, writes the
 job summary and the outputs of the Action, and prints an error annotation
-when the audit did not pass. Exit code 4 (a failed or incomplete run) gives
-the reason of the run record, whatever ``fail-on`` says. The titles and
-locations of the findings are text of a model that read untrusted code:
-the summary escapes them, and it shows them only when ``details`` is true.
+when the audit did not pass. It reads both versions of ``findings.json``:
+version 2, whose findings are Findings of the data contracts, and version
+1, which the image of an earlier release (the input ``image``) writes.
+Exit code 4 (a failed or incomplete run) gives the reason of the run
+record, whatever ``fail-on`` says. The titles and locations of the findings
+are text of a model that read untrusted code: the summary escapes them,
+and it shows them only when ``details`` is true.
 
 The Python of the runner runs this file (3.9 or later, the standard library
 only). The inputs come from the environment of the step.
@@ -260,7 +263,10 @@ def _calls(run: dict[str, Any], result: dict[str, Any]) -> str | None:
 
 def _location(finding: dict[str, Any]) -> str:
     location = _object(finding.get("location"))
-    path, start, end = location.get("path"), _count(location.get("start_line")), _count(location.get("end_line"))
+    path = location.get("path")
+    # Version 2 (a contract Finding) has startLine and endLine; version 1 has start_line and end_line.
+    start = _count(location.get("startLine", location.get("start_line")))
+    end = _count(location.get("endLine", location.get("end_line")))
     if not isinstance(path, str) or not path:
         return "no location"
     lines = "" if start is None else (f":{start}" if end in (None, start) else f":{start}-{end}")
@@ -270,12 +276,14 @@ def _location(finding: dict[str, Any]) -> str:
 def _note(finding: dict[str, Any]) -> str:
     """The labels of a finding: unverified, second tier."""
     notes = []
-    verification = finding.get("verification")
+    properties = _object(finding.get("properties"))
+    # Version 2 keeps the status in evidence.verification and the tier in properties; version 1 at the top.
+    verification = _object(finding.get("evidence")).get("verification") or finding.get("verification")
     if isinstance(verification, dict):
         verification = verification.get("status")
     if isinstance(verification, str) and verification.strip().lower() not in ("", "verified", "none"):
         notes.append(verification)
-    if finding.get("tier") == 2:
+    if properties.get("tier", finding.get("tier")) == 2:
         notes.append("second tier")
     return plain("; ".join(notes), 80)
 

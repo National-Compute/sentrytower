@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nationalcompute.io/schemas/work-item/1.json",
+  "title": "WorkItem",
+  "description": "One unit of fix work: an advisory whose exposures must close, or a finding that must be fixed, with the related items that the same fix covers.",
+  "type": "object",
+  "required": ["id", "kind"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "kind": { "type": "string", "enum": ["exposure", "finding"] },
+    "advisory": {
+      "description": "For the kind `exposure`: the advisory to fix.",
+      "type": "string",
+      "minLength": 1
+    },
+    "finding": {
+      "description": "For the kind `finding`: the finding to fix.",
+      "$ref": "../finding/1.json#/$defs/fingerprint"
+    },
+    "relatedAdvisories": {
+      "description": "Other advisories of the same family on the same component, which the same fix closes.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "relatedFindings": {
+      "type": "array",
+      "items": { "$ref": "../finding/1.json#/$defs/fingerprint" }
+    },
+    "component": {
+      "description": "Limits the work to one component, by name.",
+      "type": "string",
+      "minLength": 1
+    },
+    "application": {
+      "description": "Limits the work, and its one candidate, to one application.",
+      "type": "string",
+      "minLength": 1
+    },
+    "graft": {
+      "description": "For a Nix component: fix it with a graft of the patched library into the existing closures, not with an overlay that rebuilds the dependents.",
+      "type": "boolean"
+    }
+  },
+  "allOf": [
+    {
+      "if": { "required": ["kind"], "properties": { "kind": { "const": "exposure" } } },
+      "then": { "required": ["advisory"] }
+    },
+    {
+      "if": { "required": ["kind"], "properties": { "kind": { "const": "finding" } } },
+      "then": { "required": ["finding"] }
+    }
+  ]
+}

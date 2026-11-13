@@ -48,6 +48,16 @@ make lint           # ruff and mypy
    it.
 5. **Types and style.** `ruff` formats and lints the code; `mypy` checks
    the types. Write docstrings and documentation in short, clear sentences.
+6. **The data contracts are vendored.** `src/sentrytower/contracts/` holds
+   a release of the National Compute data contracts: the JSON Schemas of
+   the Finding and the other entities, and `nc_contracts`, their mappings
+   in Python (standard library only). Do not edit these files; the tests
+   check each one against `SHA256SUMS`. A change of the contracts is a new
+   release of them: vendor it with
+   `make vendor-contracts BUNDLE=path/to/contracts-<version>.tar.gz`, which
+   checks the tarball against the `SHA256SUMS` of the release and each file
+   against the `SHA256SUMS` in the tarball, and name the version and the
+   digest of the tarball (`BUNDLE.sha256`) in the pull request.
 
 ## Send a change
 

@@ -683,7 +683,28 @@ def test_the_last_run_is_remembered_without_findings_or_code(tmp_path: Path) -> 
 
 
 def test_the_findings_of_a_findings_document_come_back_for_the_last_run() -> None:
+    finding = OutputFinding(
+        rank=2,
+        title="SQL injection",
+        severity="high",
+        cwe=["CWE-89"],
+        locations=[OutputLocation("db.py", 3, 4), OutputLocation("views.py", 9, 9, "the request")],
+        evidence="e",
+        exploit_conditions="",
+        engine="deep-check",
+        route="funnel",
+        tier=2,
+        verification_status="unverified",
+        verification_reason="the verification call failed",
+    )
+    (item, *_) = from_document({"schema_version": "2.0.0", "findings": [finding.record(), "junk"]})
+    assert item.record() == finding.record() and item.verification_label() == "unverified: the verification call failed"
+    assert from_document(None) == []
+
+
+def test_a_findings_document_of_version_1_still_comes_back_for_the_last_run() -> None:
     document = {
+        "schema_version": "1.0.0",
         "findings": [
             {
                 "rank": 1,
@@ -693,11 +714,11 @@ def test_the_findings_of_a_findings_document_come_back_for_the_last_run() -> Non
                 "location": {"path": "db.py", "start_line": 3, "end_line": 4},
             },
             "junk",
-        ]
+        ],
     }
     (item,) = from_document(document)
     assert item.title == "SQL injection" and item.location is not None and item.location.path == "db.py" and item.cwe == ["CWE-89"]
-    assert from_document(None) == []
+    assert (item.location.start_line, item.location.end_line) == (3, 4)
 
 
 def test_paths_are_shown_from_the_home_folder_also_through_a_symbolic_link(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

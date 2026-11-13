@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nationalcompute.io/schemas/severity/1.json",
+  "title": "Severity",
+  "description": "How bad a finding or an advisory is if it is real. All engines and scanners use this one scale. The order from the worst is critical, high, medium, low, info, unknown. `info` is a fact with no direct security effect. `unknown` is a severity that the source did not give or that a mapping did not recognize; it is never a guess.",
+  "type": "string",
+  "enum": ["critical", "high", "medium", "low", "info", "unknown"]
+}
