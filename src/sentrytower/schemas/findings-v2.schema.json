@@ -90,7 +90,7 @@
           "properties": {
             "class": {
               "enum": ["defective", "suspected"],
-              "description": "The blind verification never executes a claim: defective when a verified majority called the finding exploitable, else suspected."
+              "description": "The blind verification is a second model call, by default to the same model, and never executes a claim: defective when a verified majority of its votes judged the finding exploitable, else suspected."
             }
           }
         },

@@ -76,8 +76,10 @@ other data from the audited code.
   example `/proc/1/environ`, a home folder, or a link in the repository that
   points out of it. The tools also reach the documentation of the Pi
   package. One write can happen at the start of an agent session: Pi
-  renames a folder `.pi/commands` of the repository to `.pi/prompts` (a
-  migration of Pi). It stays in the repository's own `.pi` folder, and the
+  1.5.0 renames a folder `.pi/commands` of the repository to `.pi/prompts`
+  when no `.pi/prompts` exists (a migration of Pi). The migration runs at
+  the start of Pi, before Pi reads any settings, so `--no-approve` does not
+  stop it. It stays in the repository's own `.pi` folder, and the
   read-only mount of the container image and the GitHub Action prevents
   it; to keep a working copy unchanged, audit a copy or use the image.
 - **No program of the repository runs.** SentryTower never runs a program

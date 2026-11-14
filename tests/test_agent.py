@@ -175,7 +175,7 @@ def test_the_reading_of_an_answer() -> None:
         ("db.py", 4, 4),
     ]
     assert first.cwe == ["CWE-89", "CWE-79"] and first.severity == "high"
-    assert first.explanation == "e\n\nExploit conditions: c"
+    assert first.explanation == "e\n\nAttack conditions, as the model states them: c"
     assert "locations[0]: line range reversed" in first.deviations and first.dropped_locations == [
         {"location": 3, "reason": "missing path"}
     ]

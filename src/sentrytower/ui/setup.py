@@ -35,7 +35,7 @@ from ..config import (
     user_config_path,
     write_config,
 )
-from ..policies import BUILTIN_POLICIES, DEFAULT_MODEL, ModelPolicy, policy_from_table
+from ..policies import BUILTIN_POLICIES, ModelPolicy, policy_from_table
 from ..result import PREVIEW_LABEL
 from ..router import LARGE_REPO_FILES
 from . import catalog, keychain
@@ -54,8 +54,6 @@ ROLE_TEXT = {
     "free_roaming": "an agent session on the whole repository",
     "agent": "the agent of a repository of more than 1,000 files",
 }
-# The cost of an audit with the default model and the default token ceiling: 95 of 100 measured audits cost less.
-MEASURED_COST_P95 = 1.75
 # The cost budget that a first setup proposes: the standard depth.
 PROPOSED_CAP = DEPTHS["standard"]
 WALL_CLOCKS = ((3600, "1 hour"), (7200, "2 hours"), (14_400, "4 hours"), (28_800, "8 hours"))
@@ -90,9 +88,7 @@ def model_policy(model: Model) -> ModelPolicy:
 
 
 def estimate(models: list[Model]) -> str:
-    """What an audit with the default token ceiling of 20M tokens costs with these models."""
-    if models and all(model.id == DEFAULT_MODEL for model in models):
-        return f"with 20M tokens, 95 in 100 audits cost less than {money(MEASURED_COST_P95)} with this model (measured)"
+    """What an audit with the default token ceiling of 20M tokens costs at most with these models: an estimate from the prices."""
     prices = [price_per_million(model_policy(model), "funnel") for model in models]
     if not models or any(price is None for price in prices):
         return "the price of these models is not known: set a token ceiling in the settings file"
@@ -389,7 +385,7 @@ class Setup:
                 # A depth above the standard run: more checks, with an effect on the findings that is not yet measured.
                 return PREVIEW_LABEL
             if plan.source == "standard run":
-                return "the measured run"
+                return "the standard run of 20M tokens"
             return f"about {tokens_text(plan.tokens)} tokens" if plan.source == "cost cap" else ""
 
         # A first setup proposes PROPOSED_CAP; a later one proposes the saved cap (0: no cap; none saved: the default cap).

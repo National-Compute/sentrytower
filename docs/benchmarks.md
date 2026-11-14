@@ -6,11 +6,16 @@
 > harnesses. The numbers are for an earlier internal build of SentryTower
 > with GLM 5.3 Flash, not for this release and its default model.
 
-With the same model, budget and sandbox, SentryTower detected more real
-vulnerabilities than each open-source harness it was compared with: 29%
-on 123 fresh advisories, against 11% for Piolium, 18% for deepsec, 7% for 0
-and 17% for OpenHack, at a false-alarm rate of 11%. Against Clearwing and
-Visa VVAH, the lead is not separated: its interval crosses zero.
+In our own pre-registered test, an earlier internal build of SentryTower
+with GLM 5.3 Flash detected 29.1% of the 117 advisories with answer keys (of
+123 fresh advisories), at a false-alarm rate of 11.1%. With the same model
+and budget, its detection was above that of each open-source harness it was
+compared with, on the fixtures that harness completed: 11% for Piolium, 18%
+for deepsec, 7% for 0 and 17% for OpenHack. Against Clearwing and Visa VVAH,
+the lead is not separated: its interval crosses zero. The test does not
+measure release 0.1.1, the next release or their default model
+(`deepseek/deepseek-v4.1-flash-1017`), and the build missed about 7 in 10 of
+the vulnerabilities.
 
 This page gives the method, the numbers and their limits. The aggregate
 numbers are also in [`benchmarks/`](../benchmarks/) as CSV and JSON.
@@ -23,18 +28,21 @@ Each harness ran under the same conditions:
   every harness and, in SentryTower, for every role.
 - **Budget:** 20,000,000 tokens and 4 hours (14,400 s) of wall clock for
   each run.
-- **Sandbox:** the same offline sandbox for each harness. The harness could
-  reach the model endpoint and nothing else.
+- **Sandbox:** the same offline sandbox for each harness, which could reach
+  the model endpoint and nothing else. Two rivals differ: Codex Security ran
+  in its own Bubblewrap sandbox inside it, and Clearwing ran with a local
+  implementation of its sandbox protocol in place of Docker
+  ([notes](#open-harnesses)).
 - **Runs:** one run for each repository version.
 
 These were the defaults of the internal builds that ran the test. A run of
-this release with `--model z-ai/glm-5.3-flash --max-tokens 20000000` sends the
-same model requests as the benchmarked harness, apart from the data policy
-of the provider settings (see
-[How the release keeps the benchmarked behaviour](#how-the-release-keeps-the-benchmarked-behaviour)).
-The default model of this release is `deepseek/deepseek-v4.1-flash-1017`,
-and a cost cap sets the token ceiling; the numbers on this page are for GLM 5.3
-Flash.
+the current code with `--model z-ai/glm-5.3-flash --max-tokens 20000000`
+sends the same direct model requests as the benchmarked harness, apart from
+the data policy of the provider settings, but its agent sessions run Pi
+1.5.0, whose requests differ from those of the benchmarked Pi 0.84.1 (see
+[How the release relates to the benchmarked harness](#how-the-release-relates-to-the-benchmarked-harness)).
+The default model is `deepseek/deepseek-v4.1-flash-1017`, and a cost cap
+sets the token ceiling; the numbers on this page are for GLM 5.3 Flash.
 
 ### Scoring
 
@@ -139,25 +147,33 @@ Notes on the campaigns:
 - **deepsec and 0** completed every run.
 - **OpenHack** completed every run; its cost cap ended the last 6 fixtures,
   which are left out. In the sensitivity views (the standard matcher and
-  the stricter answer key), the detection lead holds and the false-alarm
-  margin fails.
+  the stricter answer key), the hybrid's detection stays above OpenHack's
+  and the false-alarm margin fails.
 - **Codex Security** needs the OpenAI Responses API and its own Bubblewrap
   sandbox; both ran inside the sandbox. Its campaign was stopped twice by
   the executor's key-exposure rule, which fails closed on a path it cannot
   read (no key was found in any run). The 29 fixtures are the runs that
-  ended before the stop; a third campaign is in progress.
+  ended before the stop, and the result covers them only.
 - **Clearwing** ran its default `standard` depth with a local
   implementation of its sandbox protocol, because the run container has no
   Docker daemon. 90 of its 246 runs reached the 20M-token ceiling. Its cost
   cap ended the campaign after 53 fixtures.
 - **VVAH** reached its cost cap after 50 fixtures; a run costs 3.4 times a
   run of the hybrid.
-- **Google Mantis** ran with its shipped `static-only` sandbox tier; its
-  campaign is in progress. Its result will be added here.
+- **Google Mantis** ran with its shipped `static-only` sandbox tier; no
+  result of it is published.
 
 The sensitivity views of each rival (the standard matcher, the stricter
-answer key, and both) are in the CSV. In every view the hybrid's detection
-is above every rival's.
+answer key, and both) are in [`benchmarks/results.json`](../benchmarks/results.json),
+under `open_harnesses.rivals[].sensitivity_views`, with the detection of the
+hybrid and of the rival on that rival's fixtures. In every view the hybrid's
+detection is above the rival's, but each view of each rival has
+`"holds": false`: the pre-registered rule above does not hold in any
+sensitivity view, for any rival. The rule needs more than a higher detection
+(the 90% lower bound of the difference above zero and the false-alarm
+margin), and the file publishes only the detection of each view, not its
+interval or false alarms, so it does not show which part fails. Read the
+sensitivity views as a higher point estimate, not as a confirmed lead.
 
 ### What was not compared
 
@@ -197,25 +213,63 @@ Read the numbers with these limits:
   multi-LLM configuration, are not measured.
 - Large repositories (10,000 files or more) remain hard for every harness.
 - The costs are at OpenRouter prices in October 2026.
-- About 7 of 10 vulnerabilities in the confirmation test were not
-  detected. An empty result is not a proof that the code is safe.
+- The benchmarked build missed about 7 in 10 of the vulnerabilities of the
+  confirmation test (it detected 29.1%). The aggregates do not show how many
+  vulnerabilities any harness found. An empty result is not a proof that the
+  code is safe.
+- The test measures an earlier internal build with GLM 5.3 Flash. It does
+  not measure a release or the default model of a release.
 
-## How the release keeps the benchmarked behaviour
+## How the release relates to the benchmarked harness
 
-The code of the release comes from the benchmarked harness. The project
-checks that the default configuration sends the same model requests:
+The code of the release comes from the benchmarked harness. Two kinds of
+check tie them together.
 
-- Parity tests (outside this repository, because the benchmark harness is
-  not public) ran the benchmarked harness and the release side by side on
-  synthetic repositories, with a fake model and the real Pi CLI. The
-  upstream request bodies (prompts, message content, settings and the set
-  of calls), the agent commands and configuration files, and the findings
-  were the same, byte for byte.
-- The golden request fixtures of this repository (`tests/golden`) hold the
-  model requests of four of those scenarios. The benchmarked harness sent
-  the same requests, apart from the data policy of the provider settings. `tests/test_golden.py` fails when a request changes.
-- The prompt files are the benchmarked files; `tests/test_golden.py` checks
-  their SHA-256 values.
+**Request parity, up to release 0.1.1.** Parity tests (outside this
+repository, because the benchmark harness is in no public repository) ran
+the benchmarked harness and the code of 0.1.x side by side on synthetic
+repositories, with a fake model and Pi 0.84.1. The upstream request bodies
+(prompts, message content, settings and the set of calls), the agent
+commands and configuration files, and the findings were the same, byte for
+byte. These tests cannot run again: the benchmarked harness is in no
+repository.
+
+**What this repository still checks.** The golden request fixtures
+(`tests/golden`) hold the direct model requests of the funnel and the agent
+commands and configuration files of four of those scenarios.
+`tests/test_golden.py` fails when one changes, and it checks the SHA-256
+value of each prompt file against the benchmarked files.
+
+**Behavioral parity of the Pi 1.5.0 code with 0.1.1.** Pi 1.5.0 changes the
+agent requests by design, so byte-for-byte parity no longer applies. On
+2026-11-13 the project compared the released 0.1.1 image with an image
+built from the main branch at `bb23f8a` (Pi 1.5.0, `findings.json` 2.0.0):
+
+- the corpus: 50 synthetic issues, each with a vulnerable snapshot and a
+  fixed snapshot (100 small repositories with planted flaws);
+- one run of each snapshot with each image, with the default model
+  (`deepseek/deepseek-v4.1-flash-1017`) and a $0.50 cap, in the hardened
+  container of the [deployment guide](deployment.md#hardening);
+- the same scorer for both: a vulnerable snapshot is detected when a result
+  of `findings.sarif` lies in a planted file within 5 lines of a planted
+  line; a fixed snapshot raises a false alarm when any result lies in a file
+  that the fix changed.
+
+| Image | Runs complete | Detected (of 50) | False alarms (of 50) | Model cost, all runs |
+| --- | --- | --- | --- | --- |
+| 0.1.1 | 100 | 50 | 20 | $1.06 |
+| main (Pi 1.5.0) | 100 | 50 | 22 | $0.97 |
+
+Both images detected every planted flaw. On the fixed snapshots both
+flagged 18, only 0.1.1 flagged 2 and only main flagged 4: 6 discordant
+pairs, within the variation of one run each. The false-alarm rule counts any
+result in a changed file, so it overstates the false alarms of both images
+alike.
+
+This check shows that the Pi 1.5.0 code finds what 0.1.1 finds on small
+repositories with planted flaws. It is not a detection rate on real code,
+and it says nothing about the confirmation test or the open-harness test
+above. The corpus and the scorer are in the private benchmark repository.
 
 The release differs from the benchmarked harness in these points. Only the
 first two change a request body:
@@ -228,9 +282,7 @@ first two change a request body:
   system prompt for each agent request and leaves `"strict": false` out of
   each tool definition. The task prompt, the tool descriptions and
   parameters, the tool results and the requests of the funnel's direct
-  calls are the same. The parity tests above ran with Pi 0.84.1 and have
-  not run again with Pi 1.5.0.
-
+  calls are the same.
 - The gateway checks a random credential of the run on each local request.
   The benchmarked proxy accepted any local request.
 - A repository guard refuses each agent tool call whose path is outside

@@ -431,7 +431,7 @@ def hero_scan(kind: Type, dark: bool) -> str:
         kind.sans.text("A swarm of AI sentries that reads", 80, 272, 24, weight=420, fill=p["muted"]),
         kind.sans.text("your code like an attacker.", 80, 304, 24, weight=420, fill=p["muted"]),
     ]
-    stats = [("29.1%", "detection on", "fresh advisories"), ("7/7", "open harnesses", "outscored"), ("$0.30", "average cost", "per audit")]
+    stats = [("29.1%", "detection, an earlier", "internal build"), ("117", "fresh advisories", "with answer keys"), ("$0.30", "average cost", "per audit")]
     for index, (number, first, second) in enumerate(stats):
         x = 80.0 + index * 168
         if index:
@@ -443,7 +443,7 @@ def hero_scan(kind: Type, dark: bool) -> str:
         ]
     body.append(
         kind.sans.text(
-            "Pre-registered benchmark · same model, budget and sandbox for every harness",
+            "Our own pre-registered benchmark · GLM 5.3 Flash · not a measurement of a release",
             80,
             458,
             12.5,
@@ -862,12 +862,12 @@ def detection_chart(kind: Type, mode: str) -> str:
     axis_max = 50
     fa_x, fixtures_x = 710.0, 830.0
     top, pair = 150.0, 62.0
-    height = int(top + pair * len(rows) + 70)
+    height = int(top + pair * len(rows) + 90)
     body = [
         f'<rect x="0.5" y="0.5" width="{width - 1}" height="{height - 1}" rx="14" fill="{p["background"]}" stroke="{p["border"]}"/>',
         kind.sans.text("Detection of fresh advisories", 32, 52, 24, weight=620, fill=p["ink"], tracking=-0.4),
         kind.sans.text(
-            "Each pair ran on the same fixtures with the same model, budget and sandbox: GLM 5.3 Flash, 20M tokens, 4 hours.",
+            "Our own pre-registered test of an earlier internal build. Each pair: the same fixtures, GLM 5.3 Flash, 20M tokens, 4 hours.",
             32,
             77,
             13.5,
@@ -916,11 +916,16 @@ def detection_chart(kind: Type, mode: str) -> str:
     notes = [
         "Detection: a finding within 10 lines of the vulnerable operation. False alarms: a finding on the fixed lines of the fixed version.",
         "Fewer than 117 fixtures: the harness reached its cost cap, or its campaign stopped. The answer keys were drafted by models.",
+        "Codex Security and Clearwing ran in other sandboxes. The leads over Clearwing and Visa VVAH are not separated.",
     ]
     for offset, line in enumerate(notes):
         body.append(kind.sans.text(line, 32, notes_y + 18 + offset * 20, 12, fill=p["muted"]))
     defs = [linear("bar-ours", [(0, AGENTS["cobalt"][1], 1), (1, AGENTS["cobalt"][2], 1)], x2=1, y2=0), kind.defs()]
-    return svg(width, height, "Detection of fresh advisories: SentryTower against each open harness on the same fixtures", defs, body)
+    label = (
+        "Detection of fresh advisories by an earlier internal build of SentryTower with GLM 5.3 Flash, against each open harness "
+        "on the same fixtures; the lead over Clearwing and Visa VVAH is not separated"
+    )
+    return svg(width, height, label, defs, body)
 
 
 def cost_chart(kind: Type, mode: str) -> str:
@@ -956,7 +961,7 @@ def cost_chart(kind: Type, mode: str) -> str:
         f'<rect x="0.5" y="0.5" width="{width - 1}" height="{height - 1}" rx="14" fill="{p["background"]}" stroke="{p["border"]}"/>',
         kind.sans.text("Detection vs. cost per audit", 32, 52, 24, weight=620, fill=p["ink"], tracking=-0.4),
         kind.sans.text(
-            "123 fresh advisories, the same model (GLM 5.3 Flash), budget and sandbox for every harness. Up and to the left is better.",
+            "An earlier internal build; 123 fresh advisories, the same model (GLM 5.3 Flash) and budget. Up and to the left is better.",
             32,
             77,
             13.5,
@@ -1032,7 +1037,7 @@ def cost_chart(kind: Type, mode: str) -> str:
         kind.sans.text("dominated", 182, legend_y, 12.5, fill=p["muted"]),
         f'<circle cx="276" cy="{n(legend_y - 4)}" r="6" fill="{p["background"]}" stroke="{p["theirs"]}" stroke-width="2"/>',
         kind.sans.text(
-            "fewer than 117 fixtures, the number in brackets; SentryTower detected more on each of those subsets",
+            "fewer than 117 fixtures (in brackets); the leads over Clearwing and Visa VVAH are not separated",
             290,
             legend_y,
             12.5,
@@ -1042,7 +1047,8 @@ def cost_chart(kind: Type, mode: str) -> str:
     return svg(
         width,
         height,
-        "Detection against the mean cost per audit, with the Pareto frontier: SentryTower has the highest detection",
+        "Detection against the mean cost per audit, with the Pareto frontier: the earlier internal build of SentryTower with GLM 5.3 "
+        "Flash has the highest point estimate of detection, not separated from Clearwing or Visa VVAH",
         [kind.defs()],
         body,
     )

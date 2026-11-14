@@ -21,7 +21,7 @@ def test_the_defaults() -> None:
     assert DEFAULT_MODEL == "deepseek/deepseek-v4.1-flash-1017"
     assert config.models == {role: DEFAULT_MODEL for role in ROLES}
     assert config.single_model
-    # No token ceiling and no cost cap of a setting: the default cap of $2, the measured standard run of 20M tokens.
+    # No token ceiling and no cost cap of a setting: the default cap of $2, the standard run of 20M tokens.
     assert config.budget.max_tokens is None and config.budget.wall_clock_seconds == 14_400
     assert config.budget.max_cost_usd is None and config.cost_cap("funnel") == config.cost_cap("agent") == 2.0
     assert config.token_plan("funnel").tokens == 20_000_000 and config.token_plan("agent").source == "standard run"

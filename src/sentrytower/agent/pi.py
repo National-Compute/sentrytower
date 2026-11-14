@@ -7,7 +7,10 @@ SentryTower. ``--no-extensions`` also keeps out the extensions that Pi
 builds in (codemode, tool search, MCP and llama.cpp): Pi loads one of them
 only when ``--extension builtin:NAME`` names it. ``--no-approve`` makes
 Pi ignore the ``.pi`` folder of the repository, its settings and its
-``mcp.json`` included. The two extensions:
+``mcp.json`` included. It does not stop the migration that Pi 1.5.0 runs at
+its start, before it reads any settings: a folder ``.pi/commands`` of the
+repository becomes ``.pi/prompts`` when no ``.pi/prompts`` exists
+(SECURITY.md). The two extensions:
 
 - numbered-read: a ``tool_result`` hook that puts the line number in front
   of each line of a text read result (``{n:>5}│``);

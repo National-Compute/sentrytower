@@ -166,7 +166,7 @@ def build_parser() -> argparse.ArgumentParser:
         type=_money,
         metavar="USD",
         help="the cost cap of the run in US dollars: it buys the depth, no new work starts at 85%% of it, "
-        "and the dollars end the run (default: $2, the measured standard run, when each model of the "
+        "and the dollars end the run (default: $2, the standard run of 20M tokens, when each model of the "
         "route has prices; 0: no cap)",
     )
     depths = ", ".join(f"{name} (${value:g})" for name, value in DEPTHS.items())
@@ -174,7 +174,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--depth",
         choices=tuple(DEPTHS),
         metavar="DEPTH",
-        help=f"the depth of the audit: {depths}. Standard is the measured run; deep and max carry the label "
+        help=f"the depth of the audit: {depths}. Standard is the 20M-token plan of the benchmarked build; deep and max carry the label "
         f'"{PREVIEW_LABEL}". It sets --max-cost-usd when that is not given',
     )
     audit.add_argument(

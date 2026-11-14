@@ -30,6 +30,9 @@ _LINE_RANGE = re.compile(r"^\s*(?P<start>[0-9]{1,9})\s*(?:[-:]\s*(?P<end>[0-9]{1
 _CWE_ID = re.compile(r"\bCWE-([0-9]{1,9})\b", re.IGNORECASE)
 _URI_SCHEME = re.compile(r"^file:(?://)?", re.IGNORECASE)
 IMAGE_REPOSITORY_ROOT = "/workspace/repo"
+# The heading of the exploit conditions of a finding in the outputs. The conditions are a claim of the model that read
+# the code; no part of SentryTower runs the code or observes an exploit.
+CONDITIONS_LABEL = "Attack conditions, as the model states them"
 
 
 @dataclass(frozen=True)
@@ -61,7 +64,7 @@ class AgentFinding:
     def explanation(self) -> str:
         text = self.evidence.strip()
         if self.exploit_conditions.strip():
-            text = f"{text}\n\nExploit conditions: {self.exploit_conditions.strip()}".strip()
+            text = f"{text}\n\n{CONDITIONS_LABEL}: {self.exploit_conditions.strip()}".strip()
         return text
 
 
