@@ -5,12 +5,12 @@
 # The release workflow publishes it for linux/amd64 and linux/arm64 as
 # ghcr.io/national-compute/sentrytower:<version>.
 #
-#   docker build -f docker/Dockerfile -t sentrytower:0.1.1 .
+#   docker build -f docker/Dockerfile -t sentrytower:0.2.0 .
 #   mkdir -p ~/sentrytower-results     # outside the audited repository
 #   docker run --rm -e SENTRYTOWER_API_KEY --user "$(id -u):$(id -g)" \
 #     --read-only --tmpfs "/home/dev:uid=$(id -u),gid=$(id -g)" --tmpfs /tmp \
 #     -v "$PWD:/workspace/repo:ro" -v ~/sentrytower-results:/workspace/out \
-#     sentrytower:0.1.1 audit /workspace/repo --out /workspace/out
+#     sentrytower:0.2.0 audit /workspace/repo --out /workspace/out
 #
 # The layout of the run is the layout of the measured runs: the
 # repository at /workspace/repo and the agent state below /home/dev. The
@@ -98,7 +98,7 @@ LABEL org.opencontainers.image.title="SentryTower" \
       org.opencontainers.image.url="https://github.com/National-Compute/sentrytower" \
       org.opencontainers.image.documentation="https://github.com/National-Compute/sentrytower/blob/main/docs/deployment.md" \
       org.opencontainers.image.licenses="Apache-2.0 OR MIT" \
-      org.opencontainers.image.version="0.1.1"
+      org.opencontainers.image.version="0.2.0"
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # libstdc++ for Node.js; tini reaps the agent processes and forwards signals. The base image is
 # pinned by digest; these packages take their security updates.

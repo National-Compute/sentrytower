@@ -79,7 +79,7 @@ reader ignores the fields that it does not know.
 {
   "$schema": "https://raw.githubusercontent.com/National-Compute/sentrytower/main/src/sentrytower/schemas/findings-v2.schema.json",
   "schema_version": "2.0.0",
-  "tool": {"name": "SentryTower", "version": "0.1.1"},
+  "tool": {"name": "SentryTower", "version": "0.2.0"},
   "run": {
     "id": "5f0c3b1e9d2a4c7f8e6b1a2d3c4e5f60",
     "route": "funnel",
@@ -110,7 +110,7 @@ reader ignores the fields that it does not know.
       "description": "The host parameter goes to os.system without a check.\n\nAttack conditions, as the model states them: The attacker controls the host parameter.",
       "severity": "critical",
       "evidence": {"class": "suspected", "verification": {"status": "none"}},
-      "engine": {"name": "SentryTower", "version": "0.1.1", "mode": "free-roaming"},
+      "engine": {"name": "SentryTower", "version": "0.2.0", "mode": "free-roaming"},
       "ruleId": "CWE-78",
       "target": {"kind": "repository", "locator": "webapp"},
       "location": {"path": "app.py", "startLine": 60, "endLine": 60},
@@ -129,7 +129,7 @@ reader ignores the fields that it does not know.
         "class": "defective",
         "verification": {"status": "verified", "method": "blind-vote", "outcome": "supports", "score": 0.84}
       },
-      "engine": {"name": "SentryTower", "version": "0.1.1", "mode": "deep-check"},
+      "engine": {"name": "SentryTower", "version": "0.2.0", "mode": "deep-check"},
       "ruleId": "CWE-22",
       "target": {"kind": "repository", "locator": "webapp"},
       "location": {"path": "files.py", "startLine": 51, "endLine": 53},

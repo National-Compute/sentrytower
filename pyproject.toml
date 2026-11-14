@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sentrytower"
-version = "0.1.1"
+version = "0.2.0"
 description = "A swarm of AI sentries that audits your code like an attacker: vulnerabilities with file, line and CWE, as JSON, SARIF and Markdown."
 readme = "README.md"
 license = "Apache-2.0 OR MIT"
