@@ -9,6 +9,13 @@ engine parameters) is always a notable change.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-14
+
+`findings.json` is schema version 2.0.0, a breaking change of the output
+format (see Changed), and the agent engine runs Pi 1.5.0. A tool that reads
+`findings.json` 1.0.0 needs the migration below; `sentrytower last` and the
+GitHub Action read both versions.
+
 ### Added
 
 - `src/sentrytower/contracts/`: the National Compute data contracts 2.0.0,
@@ -35,6 +42,9 @@ engine parameters) is always a notable change.
   `findings.sarif` do not change.
 - README: the comparison with other harnesses names the five that the
   detection result is separated from.
+- Dependency updates for this repository come from SentryTower's own
+  remediation pipeline as pull requests; Dependabot's version updates are
+  removed.
 - **Breaking: `findings.json` is schema version 2.0.0.** Each finding is a
   `Finding` of the data contracts, version 1, the finding format of the
   hosted product, so the CLI and the hosted product share one finding

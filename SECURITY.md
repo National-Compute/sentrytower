@@ -4,7 +4,8 @@
 
 | Version | Security fixes |
 | --- | --- |
-| 0.1.x | Yes |
+| 0.2.x | Yes |
+| 0.1.x | No |
 
 A fix goes into a new patch release of the supported version. The fix
 covers the command line, the GitHub Action and the container image of that
