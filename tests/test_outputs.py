@@ -124,7 +124,7 @@ def test_findings_json_follows_its_schema_and_the_contract(findings_validator: j
     )
     assert command["target"] == {"kind": "repository", "locator": "webapp"} and command["description"] == "The host goes to the shell."
     traversal = document["findings"][0]
-    assert traversal["description"] == "`open(os.path.join(BASE, name))`\n\nExploit conditions: ../ in the name."
+    assert traversal["description"] == "`open(os.path.join(BASE, name))`\n\nAttack conditions, as the model states them: ../ in the name."
     assert traversal["evidence"] == {"class": "suspected", "verification": {"status": "none"}}
     assert traversal["location"] == {"path": "files.py", "startLine": 51, "endLine": 53, "note": "open"}
     unclassified, nowhere = document["findings"][2], document["findings"][3]
@@ -355,7 +355,7 @@ def test_the_report_has_a_table_and_the_details() -> None:
     report = markdown_report(findings(), RUN)
     assert report.startswith("# SentryTower security audit")
     assert "| 2 | critical | CWE-78, CWE-77 | `app.py:60` | Command injection \\| in ping | funnel, deep check |" in report
-    assert "### ST-001: Path traversal in read" in report and "**Exploit conditions.** ../ in the name." in report
+    assert "### ST-001: Path traversal in read" in report and "**Attack conditions, as the model states them.** ../ in the name." in report
     assert "$0.3100 (provider)" in report and "7,812,345" in report
     empty = markdown_report([], RUN)
     assert "SentryTower reported no vulnerability. This is not a proof that the code is safe" in empty

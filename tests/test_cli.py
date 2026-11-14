@@ -101,7 +101,7 @@ def test_audit_through_a_local_endpoint_writes_each_output(
     assert run["route"] == "funnel" and run["status"] == "complete" and run["findings"]["count"] == len(findings["findings"])
     assert run["usage"]["total"]["cost_source"] == "provider" and run["usage"]["total"]["calls"] == len(fake.bodies)
     assert run["configuration"]["provider"]["base_url"] == server.url and "benchmark_deviations" not in run
-    # No cap of a setting: the default cap of $2, the measured standard run of 20M tokens.
+    # No cap of a setting: the default cap of $2, the standard run of 20M tokens.
     assert (
         run["schema_version"] == "1.0.0"
         and run["budget"]["token_ceiling_source"] == "standard run"
@@ -115,7 +115,7 @@ def test_audit_through_a_local_endpoint_writes_each_output(
     assert finding["title"] == "Path traversal" and finding["evidence"] == {"class": "suspected", "verification": {"status": "none"}}
     assert (
         finding["location"] == {"path": "files.py", "startLine": _READ, "endLine": _READ + 2}
-        and finding["description"] == "e\n\nExploit conditions: c"
+        and finding["description"] == "e\n\nAttack conditions, as the model states them: c"
     )
     fingerprints = [result["partialFingerprints"]["sentrytowerFindingHash/v1"] for result in sarif["runs"][0]["results"]]
     assert fingerprints == [item["fingerprint"]["value"] for item in findings["findings"] if "location" in item]

@@ -31,7 +31,7 @@
       },
       "kind": "code",
       "title": "Path traversal in read",
-      "description": "`open(os.path.join(BASE, name))`\n\nExploit conditions: ../ in the name.",
+      "description": "`open(os.path.join(BASE, name))`\n\nAttack conditions, as the model states them: ../ in the name.",
       "severity": "high",
       "evidence": {
         "class": "suspected",
@@ -124,7 +124,7 @@
       },
       "kind": "code",
       "title": "Unclassified issue",
-      "description": "e\n\nExploit conditions: c",
+      "description": "e\n\nAttack conditions, as the model states them: c",
       "severity": "low",
       "evidence": {
         "class": "suspected",

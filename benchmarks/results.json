@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "description": "Aggregate results of the SentryTower 1.0.0 benchmarks. Aggregates only: no per-advisory data, no answer keys, no repository lists.",
+  "description": "Aggregate results of the benchmarks of an earlier internal build of SentryTower with GLM 5.3 Flash, before the public release; they measure no release and no default model of a release. Our own tests, pre-registered. Aggregates only: no per-advisory data, no answer keys, no repository lists.",
   "conditions": {
     "model": "z-ai/glm-5.3-flash via OpenRouter, the same model for every harness and every role",
     "budget_per_run": {
       "tokens": 20000000,
       "wall_clock_seconds": 14400
     },
-    "sandbox": "the same offline sandbox for every harness",
+    "sandbox": "the same offline sandbox for every harness, with access to the model endpoint only; Codex Security ran in its own Bubblewrap sandbox inside it, and Clearwing ran with a local implementation of its sandbox protocol in place of Docker",
     "runs": "one run for each repository version",
     "detection": "a finding whose location is within 10 lines of the true vulnerable operation; strict location matcher: spans of at most 31 lines, at most 3 locations for each finding, calibrated on development data so that no harness wins by chance matches",
     "false_alarm": "a finding on the fixed lines of the fixed version",
@@ -160,16 +160,18 @@
   },
   "limits": [
     "The answer keys of the fresh advisory sets are drafted by models.",
-    "The comparison includes Piolium only; other open harnesses were not part of these runs.",
+    "The confirmation test compares the hybrid with Piolium only; the open-harness test (open_harnesses) compares it with six more harnesses on the fixtures that each completed.",
     "One model (GLM 5.3 Flash).",
     "Large repositories (10,000 files or more) remain hard for every harness.",
-    "Costs are at OpenRouter prices in October 2026."
+    "Costs are at OpenRouter prices in October 2026.",
+    "The benchmarked build missed about 7 in 10 of the vulnerabilities of the confirmation test; the aggregates do not show how many any harness found."
   ],
   "open_harnesses": {
     "test": "open harnesses, October 2026",
     "registered": "2026-10-24, before any run of a rival",
     "fixtures": "the 123 advisories of the confirmation test; a rival that reached its cost cap is scored on the fixtures it completed",
     "rule": "for each rival: hybrid detection above the rival's; 90% lower bound of the difference above 0; hybrid false alarms at most the rival's + 5 points",
+    "sensitivity_views_note": "Each rival has three sensitivity views with the detection of the hybrid and of the rival on that rival's fixtures. holds is the pre-registered rule above in that view; it is false in every view of every rival, although the hybrid's detection is above the rival's in each. The views publish no interval and no false-alarm rate, so this file does not show which part of the rule fails. A view is a higher point estimate, not a confirmed lead.",
     "rivals": [
       {
         "rival": "Vercel deepsec",

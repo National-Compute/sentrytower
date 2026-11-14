@@ -164,7 +164,7 @@ follow from the plan:
 
 | Run | When | What ends it |
 | --- | --- | --- |
-| The token plan ends the run | The standard run: `m` = 1 and the cap buys at least 20,000,000 tokens (with the built-in models, the $2 default). Also a run with a `max_tokens` below what the cap buys | The measured pacing: the funnel starts no new work at 90% of the token plan, and the gateway refuses each call that would pass the plan. On the funnel route the cap is an upper limit only: there is no soft stop. On the agent route the soft stop at 85% of the cap applies too, so that the agent writes its answer before the cap refuses its calls |
+| The token plan ends the run | The standard run: `m` = 1 and the cap buys at least 20,000,000 tokens (with the built-in models, the $2 default). Also a run with a `max_tokens` below what the cap buys | The pacing of the benchmarked build: the funnel starts no new work at 90% of the token plan, and the gateway refuses each call that would pass the plan. On the funnel route the cap is an upper limit only: there is no soft stop. On the agent route the soft stop at 85% of the cap applies too, so that the agent writes its answer before the cap refuses its calls |
 | Dollars end the run | `m` above 1 (a deeper run), or a cap that buys fewer than 20,000,000 tokens (`--depth quick`, an expensive model) | The cap. The gateway applies no token ceiling, only `max_tokens` when you set it. At 85% of the cap no new work starts, and the running agent sessions get their final turn. The funnel grows its token plan while money is left, at the observed price of a token |
 
 In a run that dollars end, "spent" is the committed cost of the finished
@@ -191,10 +191,10 @@ when the run ends, each waiting call is refused at once and never goes to
 the provider.
 
 The price of a token blends the input, cached-input and output prices of the
-policy with the token mix of the engine. The mix was measured on 206 audits
-with the default model: in the funnel, 10% of the tokens are output and 80%
-of the input comes from the cache; in the single agent, 1% and 90% (both
-rounded toward a higher price). A route with more than one model takes the
+policy with a fixed token mix of the engine, set from internal runs of the
+default model that this repository does not publish: in the funnel, 10% of
+the tokens are output and 80% of the input comes from the cache; in the
+single agent, 1% and 90% (both rounded toward a higher price). A route with more than one model takes the
 highest price. The funnel route has the higher price of a token, so
 `sentrytower settings` shows its plan.
 
@@ -209,7 +209,7 @@ run of the funnel), the depth factor and the preview label
 ### Depth: what a larger budget buys
 
 A larger budget on the same repository gives a deeper audit. A run of depth
-1 keeps the measured parameters. A run of depth `m` above 1 changes them:
+1 keeps the parameters of the benchmarked build. A run of depth `m` above 1 changes them:
 
 | What | Standard | A run of `m` standard runs |
 | --- | --- | --- |
@@ -232,8 +232,8 @@ A larger budget on the same repository gives a deeper audit. A run of depth
   findings, 2 for each file, ranked with the first verification vote; the
   findings of the focus sessions and the sweep are never in it. It is the
   same rule at every budget. Tier 2 comes after it, under the preview
-  label: the further findings that the majority of their votes calls
-  "exploitable" first, then those whose verification did not run. On the
+  label: the further findings that the majority of their model votes
+  judges "exploitable" first, then those whose verification did not run. On the
   agent route, tier 1 is the whole-repository session and the slice
   findings are tier 2. `--fail-on` counts the findings of both tiers.
 - **Focus sessions.** When the unit queue and the leads are done, the
@@ -258,7 +258,7 @@ A larger budget on the same repository gives a deeper audit. A run of depth
   repository can end with money left.
 
 `--depth quick|standard|deep|max` sets a cost cap of $0.50, $2 (the
-measured run), $10 or $50 (the setup offers the same) when `--max-cost-usd`
+standard run), $10 or $50 (the setup offers the same) when `--max-cost-usd`
 is not given. With the built-in models, quick buys fewer tokens than the
 standard run, so dollars end it. Without a cap, a run has the standard plan
 of 20,000,000 tokens; `--max-tokens` sets another one, and a larger one adds
@@ -269,9 +269,10 @@ depth. A `[funnel]` value of the settings stays as it is.
 - In the funnel, the deep checks have the largest pool (50% of the
   spendable budget) and the free-roaming session has its own pool (60% of
   the token plan). The unit checks (25%) make the most calls.
-- With the default model and 20M tokens (the standard run), an audit cost
-  $0.31 on average on 206 audits, and less than $1.75 in 95 of 100. A more
-  expensive model costs more in proportion to its prices.
+- With the default model and 20M tokens (the standard run), the funnel
+  route costs up to about $1.78 at the model's list prices, an estimate from
+  the prices and the token mix above; `run.json` gives the cost of each
+  run. A more expensive model costs more in proportion to its prices.
 - The cap is a hard limit on new calls: the gateway refuses each call whose
   worst case does not fit, after the hold. The gateway counts the cost that
   the provider reports, else the estimate at the policy prices; a model
@@ -433,14 +434,14 @@ theme = "auto"                               # auto, dark or light (the backgrou
 ### Funnel parameters
 
 The `[funnel]` table changes the parameters of the funnel engine. The
-defaults are the measured values; change them only to experiment. The most
+defaults are the values of the benchmarked build; change them only to experiment. The most
 useful parameters:
 
 | Parameter | Default | Meaning |
 | --- | --- | --- |
 | `max_findings_total` | 6 | The findings of a run |
-| `extra_findings_total`, `extra_findings_per_file` | 0, 0 | The slots of tier 2 after the standard selection: first the findings that the majority of their votes calls "exploitable", then those whose verification did not run |
-| `verify_votes` | 1 | The blind verifications of each finding (a larger budget: 3) |
+| `extra_findings_total`, `extra_findings_per_file` | 0, 0 | The slots of tier 2 after the standard selection: first the findings that the majority of their model votes judges "exploitable", then those whose verification did not run |
+| `verify_votes` | 1 | The blind model verifications of each finding (a larger budget: 3); by default the verification model is the model of the finding |
 | `depth_passes`, `focus_tokens` | false, 0 | The focus sessions and the sweep after the queues, and the tokens of one focus session (a larger budget: true, 12,000,000) |
 | `max_findings_per_file` | 2 | The findings of one file |
 | `max_locations` | 4 | The locations of one finding |
@@ -531,7 +532,7 @@ Files of the interactive terminal:
 | `--max-tokens N` | An upper limit of the tokens of the run (default: the token plan of the cost cap; 20,000,000 without a cap) |
 | `--wall-clock SECONDS` | The wall clock of the run |
 | `--max-cost-usd USD` | The cost cap of the run in US dollars: it buys the depth, and new calls stop at it (default: $2, the standard run, when each model of the route has prices; `0`: no cap). A cap for a model without prices is a usage error |
-| `--depth DEPTH` | `quick`, `standard`, `deep` or `max`: a cost cap of $0.50, $2 (the measured run), $10 or $50, when `--max-cost-usd` is not given. Deep and max carry the label "preview: more checks; effect on findings not yet measured" |
+| `--depth DEPTH` | `quick`, `standard`, `deep` or `max`: a cost cap of $0.50, $2 (the standard run), $10 or $50, when `--max-cost-usd` is not given. Deep and max carry the label "preview: more checks; effect on findings not yet measured" |
 | `--sarif-category NAME` | The code-scanning category of `findings.sarif` (default `sentrytower`) |
 | `--sarif-path-prefix DIR` | A repository folder in front of each SARIF path, for the audit of a subfolder |
 | `--format FORMATS` | `json`, `sarif`, `markdown`, `html` or `all`, comma-separated (default all); `run.json` is always written |

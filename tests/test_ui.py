@@ -314,10 +314,15 @@ def test_setup_with_one_model_saves_the_key_in_the_keychain_and_never_in_the_fil
     assert document["ui"] == {"agent_name": "Juno", "agent_color": "sand"}
     assert document["provider"] == {"keychain": True, "base_url": "https://openrouter.ai/api/v1"}
     assert document["models"] == {"default": DEFAULT_MODEL} and "policies" not in document
-    # No max_tokens: the cap of $2 is the measured standard run (20M tokens of the default model).
+    # No max_tokens: the cap of $2 is the standard run (20M tokens of the default model).
     assert document["budget"] == {"wall_clock_seconds": 14_400, "max_cost_usd": 2.0}
     assert document["run"] == {"out_dir": "~/sentrytower-results"}
-    assert "Hi, I'm " in screen and "the measured run" in screen and "How much may one audit spend?" in screen
+    assert (
+        "Hi, I'm " in screen
+        and "the standard run of 20M tokens" in screen
+        and "measured run" not in screen
+        and "How much may one audit spend?" in screen
+    )
     # The deeper choices carry the preview label.
     assert "preview: more checks; effect on findings not yet measured" in screen
     assert "default" in screen and "benchmark" not in screen
@@ -410,8 +415,10 @@ def test_setup_of_a_profile_writes_the_profile_file(tmp_path: Path) -> None:
     assert f"file: {result.path}" in load_config(environment={**environ, "SENTRYTOWER_PROFILE": "work"}).sources
 
 
-def test_the_estimate_is_measured_for_the_default_model_only() -> None:
-    assert "measured" in estimate([MODELS[1]])
+def test_the_estimate_comes_from_the_prices_for_each_model() -> None:
+    # No cost figure is shown as measured: the default model gets the estimate from its prices, as every other model.
+    default = estimate([MODELS[1]])
+    assert "estimate" in default and "measured" not in default and "$1.78" in default
     assert "estimate" in estimate([MODELS[0], MODELS[1]])
     assert "not known" in estimate([Model("vendor/unknown")])
 

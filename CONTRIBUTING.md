@@ -94,7 +94,9 @@ License 2.0, without additional terms or conditions.
    `ghcr.io/national-compute/sentrytower`, and attaches the wheel and the
    source distribution to the GitHub release, each with a build provenance
    attestation.
-4. Move the major tag (`v1`) of the GitHub Action to the new release.
+4. Before 1.0 the GitHub Action has no major tag: the documentation pins
+   the release tag (`@vX.Y.Z`). `tests/test_release.py` accepts a major tag
+   only when it names the major version of the package.
 
 ### Real-model smoke
 

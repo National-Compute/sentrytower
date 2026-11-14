@@ -106,7 +106,7 @@
           "ruleIndex": 0,
           "level": "error",
           "message": {
-            "text": "Path traversal in read\n\n`open(os.path.join(BASE, name))`\n\nExploit conditions: ../ in the name."
+            "text": "Path traversal in read\n\n`open(os.path.join(BASE, name))`\n\nAttack conditions, as the model states them: ../ in the name."
           },
           "locations": [
             {
@@ -248,7 +248,7 @@
           "ruleIndex": 2,
           "level": "note",
           "message": {
-            "text": "Unclassified issue\n\ne\n\nExploit conditions: c"
+            "text": "Unclassified issue\n\ne\n\nAttack conditions, as the model states them: c"
           },
           "locations": [
             {

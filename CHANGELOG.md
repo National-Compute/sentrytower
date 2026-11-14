@@ -42,7 +42,7 @@ engine parameters) is always a notable change.
   - `related_locations` → `relatedLocations` (left out when empty);
   - `explanation` → `description`;
   - `evidence` and `exploit_conditions` (text) → `description`, which
-    holds the evidence, then `Exploit conditions:` and the conditions;
+    holds the evidence, then `Attack conditions, as the model states them:` and the conditions;
   - `engine` (`free-roaming`, `deep-check`, `single-agent`) →
     `engine.mode`, with `engine.name` `SentryTower` and `engine.version`;
   - `confidence` and `verification.keep_score` → `evidence.verification.score`;
@@ -55,8 +55,8 @@ engine parameters) is always a notable change.
     same 32 hex digits) with `fingerprint.scheme` `sentrytowerFindingHash/v1`,
     so a history of fingerprints across runs carries over;
   - new: `kind` (`code`), `evidence.class` (`defective` when a verified
-    majority of the blind verification called the finding exploitable,
-    else `suspected`), `ruleId` (the first CWE), `target` (the audited
+    majority of the blind model verification judged the finding
+    exploitable, else `suspected`), `ruleId` (the first CWE), `target` (the audited
     folder).
 
   `sentrytower last` and the GitHub Action read both versions; the Action
@@ -78,8 +78,39 @@ engine parameters) is always a notable change.
   definition. The task prompt, the tool descriptions and parameters, the
   tool results and the requests of the funnel's direct calls are the same.
   The image runs the `bin` of the Pi package, `dist/bundle/cli.js`.
-- Before the next release, run the benchmark parity check again (the
-  benchmark harness is private): its results were measured with Pi 0.84.1.
+- The check of the release against the benchmarked behaviour is now a
+  behavioral parity check with 0.1.1. The byte-for-byte parity tests against
+  the benchmarked harness ran with Pi 0.84.1 and cannot run again: the
+  harness is in no repository, and Pi 1.5.0 changes the agent requests by
+  design. On 2026-11-13, the 0.1.1 image and an image of the main branch
+  (`bb23f8a`, Pi 1.5.0) each ran once on 50 synthetic issues with planted
+  flaws (a vulnerable and a fixed snapshot each), with the default model and
+  a $0.50 cap. Both detected 50 of 50; on the fixed snapshots, 0.1.1 raised
+  20 false alarms and main 22, within the variation of one run. This shows
+  parity on planted flaws, not a detection rate on real code
+  ([benchmarks](docs/benchmarks.md#how-the-release-relates-to-the-benchmarked-harness)).
+- The outputs label the exploit conditions of a finding "Attack conditions,
+  as the model states them" (was "Exploit conditions"): in the
+  `description` of `findings.json` and the SARIF message, `report.md` and
+  `report.html`. The footers of the reports say that the verification of a
+  finding is the judgment of a second model call, by default to the same
+  model, which never runs the code. The field names and the verdict values
+  (`exploitable`, `safe`, `unclear`) stay.
+- The guided setup gives the cost of the default model as an estimate from
+  its prices, as for every other model (was "95 in 100 audits cost less
+  than $1.75 with this model (measured)", a figure without a published
+  record). The help of `--depth` and `--max-cost-usd` and the setup call
+  the standard depth the 20M-token plan of the benchmarked build (was "the
+  measured run"): the detection of the default model is not measured.
+- The documentation states the benchmark with its limits: an earlier
+  internal build with GLM 5.3 Flash, over the 117 advisories with answer
+  keys, a lead not separated from Clearwing or Visa VVAH, and no
+  measurement of a release or its default model. Codex Security and
+  Clearwing ran in other sandboxes than the other harnesses; the
+  sensitivity views of every rival have `"holds": false`, which the
+  documentation and `benchmarks/results.json` now explain; and the
+  aggregates show that the benchmarked build missed about 7 in 10 of the
+  vulnerabilities, not what any harness found.
 - `install.sh` prints the install command of the pinned Pi when another
   version is installed. It does not replace that version.
 
