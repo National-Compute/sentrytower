@@ -11,7 +11,7 @@
 # 2. Run `sentrytower setup` in a pseudo-terminal in that home folder. The
 #    answers of scripts/demo/readme.json go in as key presses: the default
 #    agent, OpenRouter, the key of the environment, one model (the default,
-#    DeepSeek V4.1 Flash), the standard depth ($2, the measured run), 4 hours,
+#    DeepSeek V4.1 Flash), the standard depth ($2, the standard run), 4 hours,
 #    the default results folder, then "Audit this folder". The program records
 #    its screen (SENTRYTOWER_RECORD).
 # 3. Render the recording: docs/assets/demo.svg (animated; the audit plays

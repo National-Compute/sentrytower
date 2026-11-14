@@ -10,16 +10,18 @@ range, CWE identifiers, a severity and an explanation.
 
 ### How good is it?
 
-**In our own test, not an independent one:** with the same model, budget
-and sandbox, an earlier internal build of SentryTower detected 29% of 123 fresh advisories, more
-than each open-source harness it was compared with (Piolium 11%, deepsec
-18%, 0 7%, OpenHack 17%; Clearwing, VVAH and Codex Security on the fixtures
-they completed), at a false-alarm rate of 11%. Against Clearwing and VVAH,
-the lead is within the margin of error. About 7 of 10 vulnerabilities in
-that test were not detected by any harness. We designed, ran and scored the
-test ourselves, and the numbers are for GLM 5.3 Flash, not for the default
-model of this release. See [benchmarks](benchmarks.md) for the method
-and the limits.
+Its detection with the default model is not measured. **In our own
+pre-registered test, not an independent one,** an earlier internal build of
+SentryTower with GLM 5.3 Flash detected 29% of the 117 fresh advisories with
+answer keys, at a false-alarm rate of 11%. With the same model and budget,
+its detection was above that of each open-source harness it was compared
+with (Piolium 11%, deepsec 18%, 0 7%, OpenHack 17%; Clearwing, VVAH and
+Codex Security on the fixtures they completed). Against Clearwing and VVAH,
+the lead is within the margin of error. The build missed about 7 in 10 of
+the vulnerabilities in that test. We designed, ran and scored the test
+ourselves, and the numbers are for GLM 5.3 Flash, not for a release or its
+default model. See [benchmarks](benchmarks.md) for the method and the
+limits.
 
 ### Is an empty result a proof that the code is safe?
 
@@ -44,9 +46,10 @@ See [depth](configuration.md#depth-what-a-larger-budget-buys).
 Each audit has a cost cap: $2 by default, when each model of the route has
 prices. The gateway stops new calls at the cap, and each report states the
 spend. With the default model (`deepseek/deepseek-v4.1-flash-1017`), $2 is
-the standard run with the measured plan of 20M tokens; in this run an audit
-cost $0.31 on average on 206 audits, and less than $1.75 in 95 of 100. You
-set another budget with `--depth`, `--max-cost-usd` or the setup
+the standard run with the plan of 20M tokens; at the model's list prices,
+20M tokens of the funnel cost about $1.78 (an estimate from the prices and
+a fixed token mix), so the cap is an upper limit and a run can stop well
+below it. You set another budget with `--depth`, `--max-cost-usd` or the setup
 ([the budget](configuration.md#the-budget-dollars-and-tokens)). The cap
 counts the usage that the provider reports: a model call that fails or
 times out without a usage report counts nothing, so the spend at the
@@ -66,7 +69,7 @@ the models. A model without prices always runs without a cap.
 A run above the standard depth (`--depth deep`, `--depth max`, or a cap
 that buys more than one standard run) carries the label "preview: more
 checks; effect on findings not yet measured". The run makes more checks than
-the measured run, and the effect of these checks on the findings is not yet
+the standard run, and the effect of these checks on the findings is not yet
 measured. The findings of the standard selection come first, by the same
 rule as at $2. The further findings are tier 2: they come after the others,
 under the preview label, in `report.md`, `report.html` and the result

@@ -3,7 +3,8 @@
 SentryTower is a size-routed hybrid of two engines behind one model gateway.
 This page describes the router, the two engines, the gateway, the money
 rules, the result of a run and the process model. The defaults are the
-measured values.
+values of the benchmarked build ([benchmarks](benchmarks.md)), which ran
+with GLM 5.3 Flash; the detection of the default model is not measured.
 
 ## Overview
 
@@ -313,8 +314,8 @@ sets the depth factor `m = max(1, min(cap / $2, the tokens that the cap
 buys / 20,000,000))` and the token plan of the engines.
 
 - **The standard run** (`m` = 1, and the cap buys at least 20,000,000
-  tokens: the $2 default with the built-in models) keeps the measured plan
-  of 20,000,000 tokens and its measured pacing: the funnel stops new work
+  tokens: the $2 default with the built-in models) keeps the plan of
+  20,000,000 tokens and the pacing of the benchmarked build: the funnel stops new work
   at 90% of the plan, and the gateway applies the plan as its token
   ceiling. On the funnel route the cap is an upper limit only; on the agent
   route the soft stop at 85% of the cap applies too, so that the agent
@@ -337,7 +338,7 @@ buys / 20,000,000))` and the token plan of the engines.
   without the findings of the focus sessions and the sweep. It is the same
   at every budget. Tier 2 holds the further findings of a deeper run after
   it, under the preview label: the findings that the majority of their
-  votes calls "exploitable" first, then those whose verification did not
+  model votes judges "exploitable" first, then those whose verification did not
   run. On the agent route, tier 1 is the whole-repository session and the
   slice findings are tier 2. `--fail-on` counts both tiers.
 
