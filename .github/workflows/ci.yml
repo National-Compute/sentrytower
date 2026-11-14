@@ -1,5 +1,6 @@
-# The checks of each change: lint, types and tests on Python 3.11 to 3.14 on Linux and macOS, and the
-# container image and the GitHub Action against the fake model endpoint of the tests (no key, no model).
+# The checks of each change: lint, types and tests on Python 3.11 to 3.14 on Linux and macOS, the
+# container image and the GitHub Action against the fake model endpoint of the tests (no key, no model),
+# and a secret scan of the tree and the history.
 name: CI
 
 on:
@@ -138,3 +139,46 @@ jobs:
         run: |
           echo "outcome ${OUTCOME}, exit code ${EXIT_CODE}, status ${STATUS}"
           test "${OUTCOME}" = failure && test "${EXIT_CODE}" = 4
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Install Gitleaks
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          curl -fsSL -o "${RUNNER_TEMP}/gitleaks.tar.gz" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  ${RUNNER_TEMP}/gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf "${RUNNER_TEMP}/gitleaks.tar.gz" -C "${RUNNER_TEMP}" gitleaks
+          sudo install "${RUNNER_TEMP}/gitleaks" /usr/local/bin/gitleaks
+          gitleaks version
+      # A Gitleaks configuration can switch detection off without an error (one with only an allowlist
+      # replaces the default rules with none), so the rules this scan uses must report a planted token.
+      - name: Check that the rules report a planted token
+        run: |
+          canary="$(mktemp -d)"
+          python3 -c 'import secrets, string; print("GITHUB_TOKEN=ghp_" + "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(36)))' >"${canary}/canary.env"
+          config=()
+          if [ -f .gitleaks.toml ]; then config=(--config .gitleaks.toml); fi
+          gitleaks dir "${canary}" "${config[@]}" --no-banner --redact --exit-code 0 \
+            --report-format json --report-path "${canary}/report.json"
+          python3 -c 'import json, sys; sys.exit(0 if any(f["RuleID"] == "github-pat" for f in json.load(open(sys.argv[1]))) else "the rules did not report a planted GitHub token")' "${canary}/report.json"
+      - name: Scan the tree
+        run: gitleaks dir . --no-banner --redact
+      # A pull request: its own commits. Otherwise: the full history of the commit.
+      - name: Scan the history
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "${EVENT}" = pull_request ]; then range="${BASE}..${HEAD}"; else range="${GITHUB_SHA}"; fi
+          gitleaks git . --no-banner --redact --log-opts="${range}"

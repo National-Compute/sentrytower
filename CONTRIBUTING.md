@@ -67,8 +67,10 @@ make lint           # ruff and mypy
 3. Open a pull request and fill in its checklist.
 
 The CI runs the lint, the tests on Python 3.11 to 3.14 on Linux and macOS,
-the container build, and a smoke test of the image and of the GitHub Action
-with a fake model endpoint.
+the container build, a smoke test of the image and of the GitHub Action
+with a fake model endpoint, and a secret scan (Gitleaks) of the tree and
+of the history: a pull request's own commits, and the full history of each
+push.
 
 ## License of a contribution
 
