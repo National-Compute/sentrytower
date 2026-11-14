@@ -40,7 +40,7 @@ from dataclasses import dataclass
 from typing import Any, Iterable, Mapping
 
 from . import __version__
-from .agent.answer import AgentFinding, cwe_labels, normalize_severity, relative_path
+from .agent.answer import CONDITIONS_LABEL, AgentFinding, cwe_labels, normalize_severity, relative_path
 from .contracts.nc_contracts import (
     evidence_from_cli,
     outcome_to_cli_verdict,
@@ -120,7 +120,7 @@ class OutputFinding:
     def explanation(self) -> str:
         text = self.evidence.strip()
         if self.exploit_conditions.strip():
-            text = f"{text}\n\nExploit conditions: {self.exploit_conditions.strip()}".strip()
+            text = f"{text}\n\n{CONDITIONS_LABEL}: {self.exploit_conditions.strip()}".strip()
         return text
 
     def fingerprint(self) -> str:

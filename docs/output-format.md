@@ -107,7 +107,7 @@ reader ignores the fields that it does not know.
       "fingerprint": {"scheme": "sentrytowerFindingHash/v1", "value": "337ab3133333efa8483a144d4fb131ff"},
       "kind": "code",
       "title": "Command injection in ping",
-      "description": "The host parameter goes to os.system without a check.\n\nExploit conditions: The attacker controls the host parameter.",
+      "description": "The host parameter goes to os.system without a check.\n\nAttack conditions, as the model states them: The attacker controls the host parameter.",
       "severity": "critical",
       "evidence": {"class": "suspected", "verification": {"status": "none"}},
       "engine": {"name": "SentryTower", "version": "0.1.1", "mode": "free-roaming"},
@@ -123,7 +123,7 @@ reader ignores the fields that it does not know.
       "fingerprint": {"scheme": "sentrytowerFindingHash/v1", "value": "c37f70f0ad0617cbd6d6b15aa9435059"},
       "kind": "code",
       "title": "Path traversal in read",
-      "description": "open(os.path.join(BASE, name)) takes the name of the request.\n\nExploit conditions: The attacker sends ../ in the name.",
+      "description": "open(os.path.join(BASE, name)) takes the name of the request.\n\nAttack conditions, as the model states them: The attacker sends ../ in the name.",
       "severity": "high",
       "evidence": {
         "class": "defective",
@@ -150,7 +150,7 @@ reader ignores the fields that it does not know.
 | `fingerprint` | object | `scheme` `sentrytowerFindingHash/v1`; `value`, 32 hex digits of the SHA-256 of the file, the first CWE and the title: a stable identity across runs while the line numbers change |
 | `kind` | `code` | A weakness in the source code |
 | `title` | string | A short name of the vulnerability (at most 300 characters) |
-| `description` | string | The code at the locations and why it is vulnerable, then `Exploit conditions:` and what an attacker must control and can then do; left out when the engine gave neither |
+| `description` | string | The code at the locations and why it is vulnerable, then `Attack conditions, as the model states them:` and what, by the model's account, an attacker must control and can then do; left out when the engine gave neither |
 | `severity` | `critical`, `high`, `medium`, `low`, `unknown` | The severity that the engine gave; `unknown` when the answer gave none. The contract's `info` never occurs |
 | `evidence` | object | How far the proof went: `class` and `verification` ([evidence](#evidence)) |
 | `engine` | object | `name` `SentryTower`, its `version`, and `mode`: the engine that found the finding ([engines](#engines)) |
@@ -165,13 +165,16 @@ reader ignores the fields that it does not know.
 
 The evidence class is one step of a ladder that all engines of National
 Compute share, from the strongest: `reproduced`, `reachable`, `defective`,
-`suspected`. The blind verification of SentryTower reads the code and votes;
-it never executes a claim. So a SentryTower finding has one of the two
-lower classes:
+`suspected`. The blind verification of SentryTower is a second model call
+(by default to the same model as the finding) that reads the code around
+the claimed line without the reasoning of the finding and votes; it never
+executes a claim. Its verdicts, `exploitable` among them, are the judgment
+of a model, not an observed exploit. So a SentryTower finding has one of
+the two lower classes:
 
 | `evidence.class` | When |
 | --- | --- |
-| `defective` | A verified majority of the blind verification called the finding exploitable |
+| `defective` | A verified majority of the blind model verification judged the finding exploitable |
 | `suspected` | Every other finding: the votes called it safe or unclear, the verification failed or did not run, or the engine does not verify its findings |
 
 | `evidence.verification` | Meaning |
@@ -192,8 +195,8 @@ lower classes:
 
 Tier 1 of the funnel route has at most 6 findings, and at most 2 for each
 file: the same selection at every budget. A deeper run adds tier 2 after
-it: first the findings that the majority of their verification votes calls
-"exploitable", then those whose verification did not run. On the agent
+it: first the findings that the majority of their model verification votes
+judges "exploitable", then those whose verification did not run. On the agent
 route, the findings of the whole-repository session are tier 1, and the
 findings of the slices are tier 2. A finding without a verification stays
 in the output with the verification status `unverified` and its reason.
@@ -299,8 +302,8 @@ this is not a proof that the code is safe.
 The same report as one web page, for a browser: the agent, the facts of the
 run, a note with the result (for a failed or incomplete run, "The audit did
 not finish."), the warnings, the findings by severity with links to their
-details, and each finding with its locations, its explanation, its exploit
-conditions, the label of an unverified finding and a link to the CWE entry
+details, and each finding with its locations, its explanation, the attack
+conditions that the model states, the label of an unverified finding and a link to the CWE entry
 of MITRE. The findings of tier 2 follow in a section "More findings" with
 the preview label. In a terminal, SentryTower opens the page when the audit
 ends (`--no-open`, or `run.open_report = false`, turns this off; CI, an SSH
