@@ -13,9 +13,11 @@ repository-code: https://github.com/National-Compute/sentrytower
 abstract: >-
   SentryTower is an LLM security-audit harness. It counts the files of a
   repository and sends it to a funnel engine (1,000 files or fewer) or to a
-  single agent (more). In a pre-registered test on 123 fresh security
-  advisories, with the same model, budget and sandbox, it detected 29.1% of
-  the vulnerabilities against 11.1% for Piolium.
+  single agent (more). In its authors' own pre-registered test on the 117
+  fresh security advisories with answer keys, an earlier internal build with
+  GLM 5.3 Flash detected 29.1% of the vulnerabilities against 11.1% for
+  Piolium, with the same model, budget and sandbox; the test does not
+  measure a release or its default model.
 keywords:
   - security
   - vulnerability detection
