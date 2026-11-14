@@ -42,6 +42,9 @@ GitHub Action read both versions.
   `findings.sarif` do not change.
 - README: the comparison with other harnesses names the five that the
   detection result is separated from.
+- Dependency updates for this repository come from SentryTower's own
+  remediation pipeline as pull requests; Dependabot's version updates are
+  removed.
 - **Breaking: `findings.json` is schema version 2.0.0.** Each finding is a
   `Finding` of the data contracts, version 1, the finding format of the
   hosted product, so the CLI and the hosted product share one finding
