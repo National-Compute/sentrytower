@@ -13,7 +13,7 @@ and budget, its detection was above that of each open-source harness it was
 compared with, on the fixtures that harness completed: 11% for Piolium, 18%
 for deepsec, 7% for 0 and 17% for OpenHack. Against Clearwing and Visa VVAH,
 the lead is not separated: its interval crosses zero. The test does not
-measure release 0.1.1, the next release or their default model
+measure release 0.1.1, release 0.2.0 or their default model
 (`deepseek/deepseek-v4.1-flash-1017`), and the build missed about 7 in 10 of
 the vulnerabilities.
 
@@ -266,7 +266,9 @@ pairs, within the variation of one run each. The false-alarm rule counts any
 result in a changed file, so it overstates the false alarms of both images
 alike.
 
-This check shows that the Pi 1.5.0 code finds what 0.1.1 finds on small
+Release 0.2.0 builds the same model requests and agent sessions as
+`bb23f8a` (the golden fixtures and the Pi pin are unchanged). This check
+shows that the Pi 1.5.0 code finds what 0.1.1 finds on small
 repositories with planted flaws. It is not a detection rate on real code,
 and it says nothing about the confirmation test or the open-harness test
 above. The corpus and the scorer are in the private benchmark repository.

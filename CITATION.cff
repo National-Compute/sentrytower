@@ -4,8 +4,8 @@ title: "SentryTower: size-routed LLM security audits of source repositories"
 type: software
 authors:
   - name: The SentryTower Authors
-version: 0.1.1
-date-released: 2026-11-09
+version: 0.2.0
+date-released: 2026-11-14
 license:
   - Apache-2.0
   - MIT
