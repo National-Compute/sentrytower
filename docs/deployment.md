@@ -93,10 +93,14 @@ make docker-smoke      # the image against a fake model endpoint: no key, no mod
 
 The image:
 
-- is built in stages: Node.js 24.19.0, Pi 1.5.0 from `docker/pi/package-lock.json`
-  (`npm ci`, integrity checked), ripgrep 15.2.0 and fd 10.5.0 from their
-  release archives (SHA-256 of each archive and binary checked), and the
-  SentryTower wheel on Python 3.12.15; each base image is pinned by digest;
+- is built in stages on Debian 13 (trixie): Node.js 24.22.3, Pi 1.5.0 from
+  `docker/pi/package-lock.json` (`npm ci`, integrity checked), ripgrep 15.2.0
+  and fd 10.5.0 from their release archives (SHA-256 of each archive and
+  binary checked), and the SentryTower wheel on Python 3.12.16; each base
+  image is pinned by digest, and the build installs the Debian security
+  updates published after the base image;
+- has no pip: SentryTower has no runtime dependency, so the build removes
+  pip once the wheel is installed;
 - runs as the user `dev` (uid 1000), with `tini` as the init process;
 - keeps the run state in `/home/dev` (`SENTRYTOWER_STATE_DIR`) and expects
   the repository at `/workspace/repo`: the layout of the measured runs;

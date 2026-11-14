@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 #
-# The SentryTower container image: Python 3.12, Node.js 24, the pinned Pi
-# coding agent 1.5.0, and ripgrep 15.2.0 and fd 10.5.0 as in the measured runs.
+# The SentryTower container image: Python 3.12 and Node.js 24 on Debian 13
+# (trixie), the pinned Pi coding agent 1.5.0, and ripgrep 15.2.0 and fd 10.5.0
+# as in the measured runs.
 # The release workflow publishes it for linux/amd64 and linux/arm64 as
 # ghcr.io/national-compute/sentrytower:<version>.
 #
@@ -20,8 +21,8 @@
 # architecture (ripgrep and fd, the pure-Python wheel) run on the platform
 # of the build, so that a multi-platform build emulates less.
 
-ARG PYTHON_IMAGE=python:3.12.15-slim-bookworm@sha256:6a0e06f5ba0b373d051aabd3fffb9b873f27f9a2a3a14bcbe37dee6f0e3bbc70
-ARG NODE_IMAGE=node:24.19.0-bookworm-slim@sha256:a9f5f7c91a432850b2a8a7797adf5eadb6c733ceed61167806cee7ea7fbc29df
+ARG PYTHON_IMAGE=python:3.12.16-slim-trixie@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b
+ARG NODE_IMAGE=node:24.22.3-trixie-slim@sha256:af02d57b57719b9657a45199a79264a9437940cd55b3c7b3fc99615654f124a0
 
 # ---------------------------------------------------------------------------
 # The Pi coding agent from the lockfile (its integrity values are checked).
@@ -101,9 +102,11 @@ LABEL org.opencontainers.image.title="SentryTower" \
       org.opencontainers.image.version="0.1.1"
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # libstdc++ for Node.js; tini reaps the agent processes and forwards signals. The base image is
-# pinned by digest; these packages take their security updates.
+# pinned by digest; the upgrade installs the Debian security updates published since it was built,
+# and the added packages take theirs.
 # hadolint ignore=DL3008
 RUN apt-get update \
+ && apt-get upgrade -y --no-install-recommends \
  && apt-get install -y --no-install-recommends libstdc++6 tini ca-certificates \
  && rm -rf /var/lib/apt/lists/* \
  && useradd --uid 1000 --user-group --create-home --home-dir /home/dev --shell /usr/sbin/nologin dev \
@@ -113,9 +116,12 @@ COPY --from=pi /usr/local/bin/node /usr/local/bin/node
 COPY --from=pi /opt/pi-install /opt/pi-install
 COPY --from=tools /out/usr/local/bin/ /usr/local/bin/
 # The wheel comes from a bind mount, so that no layer keeps it; pip writes the bytecode of SentryTower,
-# not of itself.
+# not of itself. SentryTower has no runtime dependency and nothing runs pip at run time, so pip
+# removes itself once the wheel is installed.
 RUN --mount=type=bind,from=wheel,source=/wheels,target=/tmp/wheels \
     PYTHONDONTWRITEBYTECODE=1 pip install --no-cache-dir --no-deps --disable-pip-version-check --root-user-action=ignore /tmp/wheels/*.whl \
+ && PYTHONDONTWRITEBYTECODE=1 pip uninstall --yes --disable-pip-version-check --root-user-action=ignore pip \
+ && ! python3 -c 'import pip' 2>/dev/null \
  && ln -s /opt/pi-install/node_modules/@earendil-works/pi-coding-agent /opt/pi \
  && ln -s /opt/pi/dist/bundle/cli.js /usr/local/bin/pi \
  && test "$(rg --version | head -1 | cut -d' ' -f2)" = "15.2.0" \

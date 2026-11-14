@@ -92,6 +92,18 @@ engine parameters) is always a notable change.
   of the shell, so the settings of the person who runs it cannot change a
   result.
 
+### Security
+
+- The container image is built on Debian 13 (trixie), was Debian 12
+  (bookworm), with Python 3.12.16 (was 3.12.15) and Node.js 24.22.3 (was
+  24.19.0, and 24.22.3 is a Node.js security release). Each base image
+  stays pinned by digest. The build installs the Debian security updates
+  published after the base image for every package of the image, not only
+  for the packages it adds, and it removes pip once the SentryTower wheel
+  is installed: nothing in the image runs pip. Pi 1.5.0, its npm
+  dependencies (`docker/pi/package-lock.json`), ripgrep 15.2.0, fd 10.5.0
+  and the model requests stay the same.
+
 ## [0.1.1] - 2026-11-09
 
 ### Added
