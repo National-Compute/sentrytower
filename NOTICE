@@ -34,11 +34,11 @@ fd 10.5.0
   Copyright (c) 2017-present The fd developers
   Source: https://github.com/sharkdp/fd
 
-Node.js 24.19.0
+Node.js 24.22.3
   License: MIT (with the licenses of its bundled components)
   Source: https://nodejs.org
 
-Python 3.12.15
+Python 3.12.16
   License: Python Software Foundation License Version 2
   Source: https://www.python.org
 
