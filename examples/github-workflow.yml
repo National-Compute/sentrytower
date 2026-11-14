@@ -24,7 +24,7 @@ jobs:
           persist-credentials: false
 
       - name: SentryTower
-        uses: National-Compute/sentrytower@v0.1.1
+        uses: National-Compute/sentrytower@v0.2.0
         with:
           api-key: ${{ secrets.OPENROUTER_API_KEY }}
           # fail-on: high            # fail the job on a high or critical finding

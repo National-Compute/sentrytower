@@ -99,14 +99,6 @@ process. [Security →](#security)
 
 ## Quick start
 
-> [!NOTE]
-> This README describes the main branch, which is ahead of release 0.1.1:
-> main writes `findings.json` 2.0.0 and runs Pi 1.5.0. The install commands
-> below still install release 0.1.1, which writes `findings.json` 1.0.0 and
-> runs Pi 0.84.1 (`npm install -g @earendil-works/pi-coding-agent@0.84.1`).
-> The documentation of 0.1.1 is at the tag
-> [v0.1.1](https://github.com/National-Compute/sentrytower/tree/v0.1.1).
-
 You need a key for [OpenRouter](https://openrouter.ai/keys) or any
 OpenAI-compatible endpoint. A model server on your own machine needs no key.
 There are three ways to install SentryTower.
@@ -121,7 +113,7 @@ git clone https://github.com/National-Compute/sentrytower && cd sentrytower && .
 ```
 
 **With Docker**, with nothing else to install. The image
-`ghcr.io/national-compute/sentrytower:0.1.1` (linux/amd64 and linux/arm64)
+`ghcr.io/national-compute/sentrytower:0.2.0` (linux/amd64 and linux/arm64)
 holds Python, Node.js, the Pi agent, ripgrep and fd:
 
 ```sh
@@ -130,7 +122,7 @@ mkdir -p ~/sentrytower-results
 docker run --rm -e SENTRYTOWER_API_KEY --user "$(id -u):$(id -g)" \
   --read-only --tmpfs "/home/dev:uid=$(id -u),gid=$(id -g)" --tmpfs /tmp \
   -v "$PWD:/workspace/repo:ro" -v ~/sentrytower-results:/workspace/out \
-  ghcr.io/national-compute/sentrytower:0.1.1 audit /workspace/repo --out /workspace/out
+  ghcr.io/national-compute/sentrytower:0.2.0 audit /workspace/repo --out /workspace/out
 ```
 
 This audits the current folder. Keep `--user`: the output folder must
@@ -140,7 +132,7 @@ belong to the user of the run.
 Python 3.11+, Node.js 22.19+, the Pi agent, ripgrep and fd:
 
 ```sh
-uv tool install git+https://github.com/National-Compute/sentrytower@v0.1.1    # or: pipx install git+https://...@v0.1.1
+uv tool install git+https://github.com/National-Compute/sentrytower@v0.2.0    # or: pipx install git+https://...@v0.2.0
 npm install -g @earendil-works/pi-coding-agent@1.5.0                         # the agent runtime
 brew install ripgrep fd                                                      # or: apt install ripgrep fd-find
 
@@ -316,7 +308,7 @@ steps:
   - uses: actions/checkout@v7
     with:
       persist-credentials: false
-  - uses: National-Compute/sentrytower@v0.1.1
+  - uses: National-Compute/sentrytower@v0.2.0
     with:
       api-key: ${{ secrets.OPENROUTER_API_KEY }}
       # fail-on: high
@@ -347,7 +339,7 @@ provenance attestation; pin the digest that the check shows for an image
 that cannot change:
 
 ```sh
-gh attestation verify oci://ghcr.io/national-compute/sentrytower:0.1.1 --repo National-Compute/sentrytower
+gh attestation verify oci://ghcr.io/national-compute/sentrytower:0.2.0 --repo National-Compute/sentrytower
 ```
 
 `docker build -f docker/Dockerfile .` still builds the image from a clone.
@@ -487,7 +479,7 @@ event does not give it.
   title   = {SentryTower: size-routed LLM security audits of source repositories},
   author  = {{The SentryTower Authors}},
   year    = {2026},
-  version = {0.1.1},
+  version = {0.2.0},
   url     = {https://github.com/National-Compute/sentrytower},
   license = {Apache-2.0 OR MIT}
 }
