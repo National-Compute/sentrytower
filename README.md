@@ -41,11 +41,11 @@
 <tr>
 <td width="50%" valign="top">
 
-**🎯 Top detection in our own test**<br>
+**🎯 Detection in our own test: 29.1%**<br>
 On 123 advisories published after the model's training cutoff, an earlier
-internal build of SentryTower detected 29.1% and led each of seven open-source harnesses with the same
-model, budget and sandbox; against two of them, the lead is within the margin
-of error. We ran this test ourselves. [See the results →](#results)
+internal build of SentryTower detected 29.1%, more than five of seven
+open-source harnesses with the same model, budget and sandbox. We ran this
+test ourselves. [See the results →](#results)
 
 </td>
 <td width="50%" valign="top">
@@ -203,9 +203,10 @@ with `--plain`, SentryTower prints plain log lines instead of the live view.
 
 In a pre-registered comparison on 123 security advisories published after
 the model's training cutoff, an earlier internal build of SentryTower detected more vulnerabilities
-than each of the seven open-source harnesses it was compared with. Against
-Clearwing and Visa VVAH, the lead is within the margin of error, and
-Piolium, 0 and OpenHack had fewer false alarms. Every harness ran with the
+than five of the seven open-source harnesses it was compared with: Piolium,
+Vercel deepsec, 0, OpenHack and Codex Security. Its difference from
+Clearwing and Visa VVAH is within the margin of error. Piolium, 0 and
+OpenHack had fewer false alarms. Every harness ran with the
 same mid-size model, the same token and time budget and the same offline
 sandbox.
 
@@ -216,7 +217,7 @@ sandbox.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/cost-dark.svg">
-  <img src="docs/assets/cost-light.svg" width="960" alt="Detection against the mean cost per audit, with the Pareto frontier: SentryTower has the highest detection, at $0.30 an audit">
+  <img src="docs/assets/cost-light.svg" width="960" alt="Detection against the mean cost per audit, with the Pareto frontier: SentryTower detects 29.1% at $0.30 an audit">
 </picture>
 
 | Harness | Detection | False alarms | Cost a run | Lead of SentryTower [90% CI] |

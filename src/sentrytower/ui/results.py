@@ -19,6 +19,7 @@ from typing import Any, Mapping
 
 from ..findings import OutputFinding
 from ..programs import which
+from ..report import CLAIM
 from ..result import FAILURE_PREFIXES, PREVIEW_LABEL, result_lines
 from .mascot import BADGE, art, beside
 from .term import PLAIN, Caps, Line, cells, clip
@@ -141,7 +142,7 @@ def summary_lines(
         issues = f"{count} issue{'s' if count != 1 else ''}"
         headline: Line = [(agent_name, theme.name), (" found ", PLAIN), (issues, theme.bold), (" in ", PLAIN), (repository, theme.bold)]
     elif status == "complete":
-        headline = [(agent_name, theme.name), (" found no issue in ", PLAIN), (repository, theme.bold)]
+        headline = [(agent_name, theme.name), (" reported no finding in ", PLAIN), (repository, theme.bold)]
     elif status == "interrupted":
         headline = [
             (agent_name, theme.name),
@@ -181,7 +182,7 @@ def summary_lines(
         if warning not in (shown_warnings or []):
             lines.append([(f"  {sym.warning} ", theme.caution), (str(warning), PLAIN)])
     if findings:
-        lines.append([("  Each finding is a claim of a language model: confirm it in the code before you act on it.", theme.dim)])
+        lines.append([("  " + CLAIM, theme.dim)])
     return lines
 
 

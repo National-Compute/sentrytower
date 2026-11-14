@@ -354,11 +354,13 @@ def test_a_path_with_spaces_and_percent_signs_survives_the_sarif_round_trip() ->
 def test_the_report_has_a_table_and_the_details() -> None:
     report = markdown_report(findings(), RUN)
     assert report.startswith("# SentryTower security audit")
+    # How a finding is known stands under the title, before the facts of the run.
+    assert report.index("Each finding is a claim of a language model.") < report.index("- Repository:")
     assert "| 2 | critical | CWE-78, CWE-77 | `app.py:60` | Command injection \\| in ping | funnel, deep check |" in report
     assert "### ST-001: Path traversal in read" in report and "**Exploit conditions.** ../ in the name." in report
     assert "$0.3100 (provider)" in report and "7,812,345" in report
     empty = markdown_report([], RUN)
-    assert "SentryTower reported no vulnerability. This is not a proof that the code is safe" in empty
+    assert "SentryTower reported no finding. This is not proof that the code is safe" in empty
 
 
 def test_write_outputs_writes_the_selected_files_and_run_json(tmp_path: Path) -> None:
@@ -402,6 +404,8 @@ def test_the_html_report_is_one_safe_page_with_each_finding(tmp_path: Path) -> N
     assert "a &lt;warning&gt;" in page and "found 4 issues in webapp" in page and "<svg" in page
     # Each finding has its card, and the page names the other files of the run.
     assert page.count("<article ") == 4 and "No location" in page
+    # How a finding is known stands under the headline, in the header, and once.
+    assert "Each finding is a claim of a language model." in page.split("</header>")[0] and page.count("claim of a language model") == 1
     # By severity: the critical finding (rank 2) comes before the high one (rank 1).
     assert page.index('id="ST-002"') < page.index('id="ST-001"') < page.index('id="ST-003"') < page.index('id="ST-004"')
     files = write_outputs(items, dict(run), tmp_path / "out", ("json", "html"))
@@ -410,7 +414,9 @@ def test_the_html_report_is_one_safe_page_with_each_finding(tmp_path: Path) -> N
 
 def test_the_html_report_of_a_run_without_findings_and_of_a_failed_run() -> None:
     empty = html_report([], {**RUN, "status": "complete"})
-    assert "found no issue in webapp" in empty and "not proof that the code is safe" in empty and "<table>" not in empty
+    assert "reported no finding in webapp" in empty and "<table>" not in empty
+    # What the empty result covers stands under the headline, in the header.
+    assert "not proof that the code is safe" in empty.split("</header>")[0] and "claim of a language model" not in empty
     failed = html_report([], {**RUN, "status": "failed", "failure": "the funnel wrote no findings file"})
     assert "could not finish the audit of webapp" in failed and "the funnel wrote no findings file" in failed
 

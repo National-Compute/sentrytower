@@ -628,7 +628,7 @@ def test_the_summary_lists_the_findings_by_severity_and_says_where_the_files_are
     assert "Juno found 2 issues in shop" in text and "12 min 34 s · 3.4M tokens · $0.31 · funnel engine" in text
     assert text.index("app/db.py:12") < text.index("app/views.py:40") and "CRIT" in text and "CWE-89" in text
     assert "findings.json · report.md" in text and "a new warning" in text and "shown already" not in text
-    assert "confirm it in the code" in text
+    assert "Each finding is a claim of a language model. Confirm it in the code" in text
     empty = summary_lines(
         [], {**run, "warnings": []}, files, theme=theme_for("sand", "dark"), caps=CAPS, agent_name="Juno", agent_color="sand", width=100
     )
