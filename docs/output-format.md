@@ -279,20 +279,20 @@ paths relative to the audited folder.
 The report for people. The GitHub Action writes its own summary of the run
 to the job summary.
 
+- Under the title, how the result is known: each finding is a claim of a
+  language model; a run without findings says that no finding was
+  reported, and that this is not proof that the code is safe.
 - A summary of the run: the repository, the route, the models, the tokens
   and the cost, the duration and the stop, and the findings by severity.
 - `## Result`: the sentences of the result, the spend against the cap, why
   the run stopped, the checked units, the depth of a deeper run (with the
   preview label) and the failure.
 - `## Findings`: a table of the findings of tier 1, then the details of
-  each finding with its locations, its engine, its verification score, the
+  each finding with its locations, its engine, its model review score, the
   label of an unverified finding (`Verification: unverified: <reason>`) and
   its explanation.
 - `## More findings (preview: more checks; effect on findings not yet
   measured)`: the findings of tier 2 of a deeper run, in the same form.
-
-A run without findings says that no vulnerability was reported, and that
-this is not a proof that the code is safe.
 
 ## report.html
 

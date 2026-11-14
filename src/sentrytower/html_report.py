@@ -17,7 +17,7 @@ from typing import Any
 
 from . import __version__
 from .findings import SEVERITY_ORDER, OutputFinding, severity_counts
-from .report import ENGINE_NAMES
+from .report import CLAIM, EMPTY, ENGINE_NAMES
 from .result import PREVIEW_LABEL, result_lines
 from .ui.mascot import BADGE, pixels
 from .ui.theme import AGENT_COLORS, DEFAULT_AGENT_COLOR
@@ -55,6 +55,7 @@ header.top { display: flex; gap: 20px; align-items: center; margin-bottom: 24px;
 header.top svg { width: 56px; height: 64px; flex: none; image-rendering: pixelated; }
 .brand { color: var(--muted); font-size: 13px; letter-spacing: .04em; text-transform: uppercase; }
 h1 { font-size: 26px; line-height: 1.25; margin: 4px 0 0; }
+.known { margin: 6px 0 0; }
 h1 .agent { color: var(--accent-text); }
 h2 { font-size: 18px; margin: 32px 0 12px; }
 h2 small { color: var(--muted); font-weight: 600; font-size: 13px; }
@@ -206,7 +207,7 @@ def _finding(finding: OutputFinding) -> str:
     engine = ENGINE_NAMES.get(finding.engine, finding.engine)
     meta.append(f"<span>{_e(engine)}</span>")
     if finding.confidence is not None:
-        meta.append(f"<span>verification score {finding.confidence:.2f}</span>")
+        meta.append(f"<span>model review score {finding.confidence:.2f}</span>")
     label = finding.verification_label()
     if label:
         meta.append(f'<span class="label">{_e(label)}</span>')
@@ -271,7 +272,7 @@ def html_report(findings: list[OutputFinding], run: dict[str, Any]) -> str:
         headline = (
             f'<span class="agent">{_e(name)}</span> found {count} issue{"s" if count != 1 else ""} in {_e(repo_name)}'
             if count
-            else f'<span class="agent">{_e(name)}</span> found no issue in {_e(repo_name)}'
+            else f'<span class="agent">{_e(name)}</span> reported no finding in {_e(repo_name)}'
         )
     elif status == "interrupted":
         headline = f'<span class="agent">{_e(name)}</span> stopped early: {count} finding{"s" if count != 1 else ""} so far'
@@ -290,6 +291,13 @@ def html_report(findings: list[OutputFinding], run: dict[str, Any]) -> str:
         ("Duration", _duration(run.get("seconds"))),
         ("Finished", _when(run.get("ended_at"))),
     ]
+    # How the result is known, under the headline: what a finding is, or what an empty result covers.
+    if findings:
+        known = f'<p class="known">{CLAIM}</p>'
+    elif status == "complete":
+        known = f'<p class="known">{EMPTY}</p>'
+    else:
+        known = ""
     counts = severity_counts(findings)
     chips = "".join(
         f'<li class="{severity}"><b>{counts[severity]}</b> {SEVERITY_LABELS[severity].lower()}</li>'
@@ -312,7 +320,7 @@ def html_report(findings: list[OutputFinding], run: dict[str, Any]) -> str:
         "<main>",
         '<header class="top">',
         agent_svg(color),
-        f'<div><div class="brand">SentryTower security audit</div><h1>{headline}</h1></div>',
+        f'<div><div class="brand">SentryTower security audit</div><h1>{headline}</h1>{known}</div>',
         "</header>",
         '<dl class="facts">' + "".join(f"<div><dt>{label}</dt><dd>{_e(value)}</dd></div>" for label, value in facts) + "</dl>",
     ]
@@ -329,21 +337,15 @@ def html_report(findings: list[OutputFinding], run: dict[str, Any]) -> str:
     warnings = [str(item) for item in run.get("warnings") or []]
     if warnings:
         parts.append('<div class="note"><b>Warnings</b><ul>' + "".join(f"<li>{_e(item)}</li>" for item in warnings) + "</ul></div>")
-    if not findings:
-        if status == "complete":
-            parts.append(
-                '<div class="note">SentryTower reported no vulnerability. This is not proof that the code is safe: '
-                "the engines read a part of the code within a budget, and a language model can miss a vulnerability.</div>"
-            )
-    else:
+    if findings:
         first = [finding for finding in findings if finding.tier != 2]
         more = [finding for finding in findings if finding.tier == 2]
         parts += ["<h2>Findings</h2>", *(_table(first) if first else ["<p>The standard run of the audit reported no vulnerability.</p>"])]
         if more:
             parts += [
                 f"<h2>More findings <small>({_e(PREVIEW_LABEL)})</small></h2>",
-                "<p>The deeper checks of this run found these findings after the findings of the standard run. They are verified, "
-                "unless a finding says otherwise.</p>",
+                "<p>The deeper checks of this run found these findings after the findings of the standard run. A second model call reviewed "
+                "each one, unless a finding says otherwise.</p>",
                 *_table(more),
             ]
         parts += ["<h2>Details</h2>", *(_finding(finding) for finding in first)]
@@ -355,8 +357,7 @@ def html_report(findings: list[OutputFinding], run: dict[str, Any]) -> str:
     outputs = [str(item) for item in (run.get("outputs") or {}).values() if str(item) != "report.html"]
     parts += [
         "<footer>",
-        f"<p>Generated by SentryTower {_e(__version__)}. Each finding is a claim of a language model: confirm it in the code "
-        "before you act on it.</p>",
+        f"<p>Generated by SentryTower {_e(__version__)}.</p>",
         f"<p>Files of this run: {', '.join(f'<code>{_e(item)}</code>' for item in outputs)}.</p>" if outputs else "",
         "</footer>",
         "</main>",
