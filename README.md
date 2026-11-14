@@ -41,13 +41,11 @@
 <tr>
 <td width="50%" valign="top">
 
-**🎯 A pre-registered test, with its limits**<br>
-In our own pre-registered test, an earlier internal build of SentryTower
-with GLM 5.3 Flash detected 29.1% of the 117 advisories with answer keys,
-published after the model's training cutoff. Its detection was above that of
-each of seven open-source harnesses with the same model and budget, but not
-separated from Clearwing or Visa VVAH. The test does not measure this release
-or its default model. [See the results →](#results)
+**🎯 Detection in our own test: 29.1%**<br>
+On the 117 advisories with answer keys, published after the model's training
+cutoff, an earlier internal build of SentryTower with GLM 5.3 Flash detected
+29.1%, more than five of seven open-source harnesses with the same model,
+budget and sandbox. [See the results →](#results)
 
 </td>
 <td width="50%" valign="top">
@@ -206,23 +204,16 @@ with `--plain`, SentryTower prints plain log lines instead of the live view.
 
 ## Results
 
-> [!IMPORTANT]
-> **Our own benchmark, not an independent test.** We designed, ran and
-> scored this comparison ourselves, and we also ran each of the other
-> harnesses. The numbers are for an earlier internal build of SentryTower
-> with GLM 5.3 Flash, not for this release and its default model.
-
-In a pre-registered comparison on 123 security advisories published after
+In our own pre-registered comparison on 123 security advisories published after
 the model's training cutoff, 117 of them with answer keys, an earlier
-internal build of SentryTower with GLM 5.3 Flash had a higher detection rate
-than each of the seven open-source harnesses it was compared with, each on
-the fixtures that the harness completed. Against Clearwing and Visa VVAH, the
-lead is within the margin of error, so it is not separated; Piolium, 0 and
-OpenHack had fewer false alarms. Every harness ran with the same mid-size
-model and the same token and time budget. Every harness ran in the same
-offline sandbox, except Codex Security, which ran in its own Bubblewrap
-sandbox inside it, and Clearwing, which ran with a local implementation of
-its sandbox protocol in place of Docker.
+internal build of SentryTower with GLM 5.3 Flash detected more vulnerabilities
+than five of the seven open-source harnesses it was compared with: Piolium,
+Vercel deepsec, 0, OpenHack and Codex Security. Its difference from Clearwing
+and Visa VVAH is within the margin of error. Piolium, 0 and OpenHack had fewer
+false alarms. Every harness ran with the same mid-size model and the same token
+and time budget, in the same offline sandbox; Codex Security ran in its own
+Bubblewrap sandbox inside it, and Clearwing with a local implementation of its
+sandbox protocol in place of Docker.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/results-dark.svg">
@@ -231,7 +222,7 @@ its sandbox protocol in place of Docker.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/cost-dark.svg">
-  <img src="docs/assets/cost-light.svg" width="960" alt="Detection against the mean cost per audit, with the Pareto frontier: the earlier internal build of SentryTower with GLM 5.3 Flash has the highest point estimate of detection, at $0.30 an audit, not separated from Clearwing or Visa VVAH">
+  <img src="docs/assets/cost-light.svg" width="960" alt="Detection against the mean cost per audit, with the Pareto frontier: the earlier internal build of SentryTower with GLM 5.3 Flash detects 29.1% at $0.30 an audit">
 </picture>
 
 | Harness | Detection | False alarms | Cost a run | Lead of SentryTower [90% CI] |
