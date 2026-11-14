@@ -34,7 +34,7 @@ dependencies = []
 
 [project.optional-dependencies]
 # Exact versions: a new release of ruff, mypy or pytest can change the result of CI on an unchanged commit.
-# Dependabot proposes each update as a pull request, so that CI checks it first.
+# SentryTower's own pipeline proposes each update as a pull request, so that CI checks it first.
 dev = [
     "pytest==9.2.0",
     "pytest-timeout==2.4.0",
