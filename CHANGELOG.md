@@ -25,6 +25,16 @@ engine parameters) is always a notable change.
 
 ### Changed
 
+- The reports state how a result is known under the headline:
+  `report.html` and `report.md` say there that each finding is a claim of
+  a language model, and a run without findings says there what the empty
+  result covers. The headline of a run without findings is "reported no
+  finding". The score of a deep-check finding has the label "model review
+  score", and the text over the findings of a deeper run says that a
+  second model call reviewed each one. `findings.json` and
+  `findings.sarif` do not change.
+- README: the comparison with other harnesses names the five that the
+  detection result is separated from.
 - **Breaking: `findings.json` is schema version 2.0.0.** Each finding is a
   `Finding` of the data contracts, version 1, the finding format of the
   hosted product, so the CLI and the hosted product share one finding
