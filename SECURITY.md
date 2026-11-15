@@ -59,7 +59,7 @@ These are not vulnerabilities of SentryTower:
   project. Tell us when the image holds a version with a known
   vulnerability.
 - What the model provider does with the requests. Its data policy applies.
-  The built-in routes ask OpenRouter for the endpoints of an allowlist that
+  On the built-in routes, SentryTower asks OpenRouter for the endpoints of an allowlist that
   do not store or train on the data (`data_collection: "deny"`).
 
 ## Threat model
@@ -101,7 +101,7 @@ other data from the audited code.
   cannot read its memory or its environment.
 - **The gateway listens on the loopback address only.** It serves model
   calls only as `POST /chat/completions` with the credential of the run,
-  and only for the models of the run. Besides, it answers `GET /budget`
+  and only for the models of the run. It also answers `GET /budget`
   with the credential (the money of the run, numbers only) and
   `GET /healthz` (a status). It enforces the token ceiling and the cost
   cap of the run on the usage that the provider reports. After the

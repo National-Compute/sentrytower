@@ -1,6 +1,6 @@
 # Contributing to SentryTower
 
-Thank you for your help. This document tells you how to set up the project,
+Thank you for your help. This document explains how to set up the project,
 which rules apply to a change, and how to send it.
 
 By taking part, you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
@@ -26,7 +26,7 @@ make lint           # ruff and mypy
 
 1. **The model requests are pinned.** The prompt files, the
    request policies, the engine parameters and the code that builds a
-   message or an agent command decide what the model sees. The golden
+   message or an agent command determine what the model sees. The golden
    fixtures in `tests/golden` hold the model requests of four synthetic
    scenarios, byte for byte, and `tests/test_golden.py` fails when one
    changes. Do not change a request by accident. When you change one on
@@ -35,7 +35,7 @@ make lint           # ruff and mypy
    - regenerate the fixtures (`make golden`) and commit them;
    - add an entry to `CHANGELOG.md`.
 
-   Such a change leaves the measured configuration. It can be an option,
+   After such a change, the configuration is no longer the measured one. It can be an option,
    but it can become the default only after a new measurement.
 2. **No secrets and no private code.** Do not put a key, customer code or
    the content of an agent session in a change, a test fixture or a log.
@@ -119,9 +119,9 @@ python3 scripts/release/smoke.py --build --image sentrytower:smoke --yes
 It reads two keys from the environment: `SENTRYTOWER_API_KEY` (a key with
 credit) and `SMOKE_NOCREDIT_KEY` (a second key with a credit limit of
 $0.01). It spends at most $25 and writes `smoke-report.md` to the folder
-of the runs (default `~/sentrytower-smoke`). Each run has a wall clock: one
+of the runs (default `~/sentrytower-smoke`). Each run has a wall-clock time limit: one
 hour for the $2 and $1 runs, two hours for the $10 runs. By default the two
-deep runs go one after the other, beside the other runs (up to about four
+deep runs go one after the other, in parallel with the other runs (up to about four
 hours). `--lanes all` starts every run at the same time (up to about two
 hours), and `--lanes 1` runs one audit at a time (up to about seven and a
 half hours). The deep runs start up to one agent session for each CPU: with

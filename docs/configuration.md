@@ -107,7 +107,7 @@ model; the role overrides stay.
   A weak agent model makes sessions end without an answer.
 - The short roles (`unit_check`, `triage`, `verify`, `rating`) answer with
   one JSON object. A smaller model can be enough; its judgment decides
-  which units get a deep check and how the output ranks.
+  which units get a deep check and how the output is ranked.
 - Give each model a [request policy](#model-request-policies): its
   completion ceiling, its reasoning effort, its context window and its
   prices. Without a policy, a model gets the generic policy, which has no
@@ -164,10 +164,10 @@ follow from the plan:
 
 | Run | When | What ends it |
 | --- | --- | --- |
-| The token plan ends the run | The standard run: `m` = 1 and the cap buys at least 20,000,000 tokens (with the built-in models, the $2 default). Also a run with a `max_tokens` below what the cap buys | The pacing of the benchmarked build: the funnel starts no new work at 90% of the token plan, and the gateway refuses each call that would pass the plan. On the funnel route the cap is an upper limit only: there is no soft stop. On the agent route the soft stop at 85% of the cap applies too, so that the agent writes its answer before the cap refuses its calls |
-| Dollars end the run | `m` above 1 (a deeper run), or a cap that buys fewer than 20,000,000 tokens (`--depth quick`, an expensive model) | The cap. The gateway applies no token ceiling, only `max_tokens` when you set it. At 85% of the cap no new work starts, and the running agent sessions get their final turn. The funnel grows its token plan while money is left, at the observed price of a token |
+| The token plan ends the run | The standard run: `m` = 1 and the cap buys at least 20,000,000 tokens (with the built-in models, the $2 default). Also a run with a `max_tokens` below what the cap buys | The pacing of the benchmarked build: the funnel starts no new work at 90% of the token plan, and the gateway refuses each call that would pass the plan. On the funnel route the cap is an upper limit only: there is no soft stop. On the agent route the soft stop at 85% of the cap applies too, so that the agent writes its answer before the gateway refuses its calls at the cap |
+| The cost cap ends the run | `m` above 1 (a deeper run), or a cap that buys fewer than 20,000,000 tokens (`--depth quick`, an expensive model) | The cap. The gateway applies no token ceiling, only `max_tokens` when you set it. At 85% of the cap no new work starts, and the running agent sessions get their final turn. The funnel grows its token plan while money is left, at the observed price of a token |
 
-In a run that dollars end, "spent" is the committed cost of the finished
+In a run that the cost cap ends, "spent" is the committed cost of the finished
 model calls. The calls in flight do not count; the last 15% of the cap is
 for them and for the final turns. At 85% no new unit check, triage, deep
 check, verification, focus session, sweep or slice starts, and the stop
@@ -194,14 +194,14 @@ The price of a token blends the input, cached-input and output prices of the
 policy with a fixed token mix of the engine, set from internal runs of the
 default model that this repository does not publish: in the funnel, 10% of
 the tokens are output and 80% of the input comes from the cache; in the
-single agent, 1% and 90% (both rounded toward a higher price). A route with more than one model takes the
+single agent, 1% and 90% (both rounded toward a higher price). On a route with more than one model, SentryTower uses the
 highest price. The funnel route has the higher price of a token, so
 `sentrytower settings` shows its plan.
 
 `run.json` records the plan (`budget.max_tokens`), where it comes from
 (`budget.token_ceiling_source`: `standard run`, `cost cap`, `max_tokens` or
 `default`), the ceiling of the gateway (`budget.gateway_token_ceiling`:
-null when dollars end the run, unless `max_tokens` is set), the soft stop
+null when the cost cap ends the run, unless `max_tokens` is set), the soft stop
 (`budget.soft_stop_usd`: null without a cap, and when the token plan ends a
 run of the funnel), the depth factor and the preview label
 ([output format](output-format.md#runjson)).
@@ -223,7 +223,7 @@ A larger budget on the same repository gives a deeper audit. A run of depth
 | After the queues (funnel) | none | focus sessions, then the sweep |
 | Large repositories (agent route) | one session | the whole-repository session, then slice sessions |
 
-- **Preview.** Each run of depth above 1 carries the label "preview: more
+- **Preview.** Each run of depth above 1 has the label "preview: more
   checks; effect on findings not yet measured": in the help of `--depth`,
   the choices of the setup, the plain log at the start, the result lines,
   `report.md`, `report.html`, the result screen and the headings of tier
@@ -250,7 +250,7 @@ A larger budget on the same repository gives a deeper audit. A run of depth
   sessions of the same size that each audit one slice: folders with about
   the same amount of source code (no tests, docs, examples, vendored,
   generated or build code). A finding of a slice that repeats an earlier
-  one (the same file, within 10 lines) goes; each other finding gets three
+  one (the same file, within 10 lines) is dropped; each other finding gets three
   blind verifications and stays unless the majority verdict is "safe". A
   finding whose verification did not run stays with the label
   "unverified".
@@ -260,7 +260,7 @@ A larger budget on the same repository gives a deeper audit. A run of depth
 `--depth quick|standard|deep|max` sets a cost cap of $0.50, $2 (the
 standard run), $10 or $50 (the setup offers the same) when `--max-cost-usd`
 is not given. With the built-in models, quick buys fewer tokens than the
-standard run, so dollars end it. Without a cap, a run has the standard plan
+standard run, so the cost cap ends it. Without a cap, a run has the standard plan
 of 20,000,000 tokens; `--max-tokens` sets another one, and a larger one adds
 depth. A `[funnel]` value of the settings stays as it is.
 
@@ -332,7 +332,7 @@ allow_fallbacks = true
 data_collection = "deny"
 ```
 
-Some calls of this model reason without end. The completion ceiling of
+Some calls of this model do not stop reasoning. The completion ceiling of
 65,536 tokens stops such a call after about 400 s, at every depth; no
 complete answer of the measured runs had more than 48,607 tokens.
 `max_output_tokens` (384,000, the largest output that each endpoint of the
@@ -531,8 +531,8 @@ Files of the interactive terminal:
 | `--base-url URL` | An OpenAI-compatible endpoint |
 | `--max-tokens N` | An upper limit of the tokens of the run (default: the token plan of the cost cap; 20,000,000 without a cap) |
 | `--wall-clock SECONDS` | The wall clock of the run |
-| `--max-cost-usd USD` | The cost cap of the run in US dollars: it buys the depth, and new calls stop at it (default: $2, the standard run, when each model of the route has prices; `0`: no cap). A cap for a model without prices is a usage error |
-| `--depth DEPTH` | `quick`, `standard`, `deep` or `max`: a cost cap of $0.50, $2 (the standard run), $10 or $50, when `--max-cost-usd` is not given. Deep and max carry the label "preview: more checks; effect on findings not yet measured" |
+| `--max-cost-usd USD` | The cost cap of the run in US dollars: it sets the depth, and new calls stop at it (default: $2, the standard run, when each model of the route has prices; `0`: no cap). A cap for a model without prices is a usage error |
+| `--depth DEPTH` | `quick`, `standard`, `deep` or `max`: a cost cap of $0.50, $2 (the standard run), $10 or $50, when `--max-cost-usd` is not given. Deep and max have the label "preview: more checks; effect on findings not yet measured" |
 | `--sarif-category NAME` | The code-scanning category of `findings.sarif` (default `sentrytower`) |
 | `--sarif-path-prefix DIR` | A repository folder in front of each SARIF path, for the audit of a subfolder |
 | `--format FORMATS` | `json`, `sarif`, `markdown`, `html` or `all`, comma-separated (default all); `run.json` is always written |
@@ -560,8 +560,8 @@ sentences ([output format](output-format.md#the-result)).
 ### The output folder
 
 The output folder is often in the audited repository (`sentrytower audit .`
-writes `./sentrytower-results`), and the repository decides what its folders
-hold. So, before any model call:
+writes `./sentrytower-results`), and the author of the repository controls what its folders
+contain. So, before any model call:
 
 - the output folder must not be a symbolic link;
 - no folder on its path inside the audited repository may be a link (a link

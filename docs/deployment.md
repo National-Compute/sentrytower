@@ -2,8 +2,8 @@
 
 SentryTower runs in three ways: as a command line on your computer,
 as a container image, and as a GitHub Action. The container image is the
-recommended deployment: it has the pinned Pi CLI, ripgrep and fd, and it
-shows the model the paths of the measured runs (`/workspace/repo` and
+recommended deployment: it has the pinned Pi CLI, ripgrep and fd, and in
+it the model sees the paths of the measured runs (`/workspace/repo` and
 `/home/dev`).
 
 | Way | Command | What it needs |
@@ -117,8 +117,8 @@ be a symbolic link ([the output folder](configuration.md#the-output-folder)).
 ## Docker Compose
 
 [`docker-compose.yml`](../docker-compose.yml) runs the published image on an
-internal network without a route to the internet. Its only way out is a
-Squid egress proxy that allows TLS connections to `openrouter.ai` and
+internal network without a route to the internet. Its only connection to
+the internet is a Squid egress proxy that allows TLS connections to `openrouter.ai` and
 refuses everything else
 ([`docker/egress/squid.conf`](../docker/egress/squid.conf)). The gateway of
 SentryTower sends its upstream requests through `HTTPS_PROXY`; the engines
@@ -218,9 +218,9 @@ who can see the pull request. So on a public repository, by default:
   branch to the open pull requests from that branch, so an open pull
   request from the default branch to another branch shows them.
 
-Set `public-findings: "true"` to show the findings to every reader. A
-private or internal repository always gets the findings in the summary, the
-artifact and code scanning. Code scanning in a private repository needs
+Set `public-findings: "true"` to show the findings to every reader. For a
+private or internal repository, the action always puts the findings in the
+summary, the artifact and code scanning. Code scanning in a private repository needs
 GitHub Advanced Security (GitHub Code Security). Without it, set
 `upload-sarif: "false"` and use the artifact or the job summary.
 
@@ -343,5 +343,5 @@ boundary. Add these layers in production:
 | Network | Access only to the model endpoint: an egress proxy with an allowlist, a NetworkPolicy, or a firewall |
 | Secrets | The key from a secret store into `SENTRYTOWER_API_KEY`; never in a file, an image or a command line |
 | Budget | The cost cap ($2 by default) and a job timeout above the wall clock of the run |
-| Data | The endpoint receives source code: use a provider whose data policy you accept, or a local endpoint. The built-in routes ask OpenRouter for endpoints that do not store or train on the data (`data_collection: "deny"`); see [where your code goes](../README.md#where-your-code-goes) |
+| Data | The endpoint receives source code: use a provider whose data policy you accept, or a local endpoint. On the built-in routes, SentryTower asks OpenRouter for endpoints that do not store or train on the data (`data_collection: "deny"`); see [where your code goes](../README.md#where-your-code-goes) |
 | Outputs | `run.json` and the findings files hold no key. The output folder must not be a symbolic link and must belong to the user of the run. The run state (`--keep-state`) holds the agent sessions, which hold code: treat it as source code |

@@ -4,7 +4,7 @@
 </picture>
 
 <p align="center">
-  <b>Put a swarm of AI sentries on your code.</b><br>
+  <b>Audit your code with a swarm of AI agents.</b><br>
   SentryTower reads your repository the way an attacker would and reports each vulnerability<br>
   with the file, the line, the CWE and the evidence.
 </p>
@@ -52,7 +52,7 @@ budget and sandbox. [See the results →](#results)
 
 **💸 A budget in dollars**<br>
 Each audit has a cost cap of $2 by default, and the gateway stops new calls
-at it. A larger cap buys a deeper audit (a preview). Every report states the
+at it. With a larger cap, SentryTower runs a deeper audit (a preview). Every report states the
 spend, why the run stopped and how much of the code it checked.
 
 </td>
@@ -65,7 +65,7 @@ An inventory maps every code unit and its security signals. The swarm
 checks the units in the order of their signals until the queue or the
 budget ends, traces the strongest leads in deep agent sessions, and has a
 second model call judge each of their findings. The report says how many
-units it checked. Above 1,000 files, one deep agent takes the watch.
+units it checked. A repository with more than 1,000 files goes to one deep agent.
 
 </td>
 <td width="50%" valign="top">
@@ -147,7 +147,7 @@ The guided setup takes about a minute:
    is saved.
 3. **Choose one model or more** from a searchable list with the context
    window, the price and the tool support of each. The default model,
-   DeepSeek V4.1 Flash, carries a ★.
+   DeepSeek V4.1 Flash, is marked with a ★.
 4. **Choose the depth** of an audit: quick ($0.50), standard ($2, the
    20M-token plan of the benchmarked build, proposed), deep ($10) or max
    ($50), another amount, or no cap. The detection of the default model is
@@ -285,8 +285,8 @@ flowchart LR
    the key, applies the request policy of the model, retries transient
    failures and enforces the cost cap and the token ceiling. A call that
    fits under the cap only after the calls in flight end waits for them,
-   up to 10 minutes. When dollars end the run (a cap above $2, or a cap that
-   buys fewer than the 20M tokens of the standard run), no new work starts
+   up to 10 minutes. When the cost cap ends the run (a cap above $2, or a cap that
+   pays for fewer than the 20M tokens of the standard run), no new work starts
    at 85% of the cap, and the running agent sessions finish. When the
    provider refuses the key, the account or the route (HTTP 401, 402, 403
    or 404), the gateway sends no more calls and the run fails with exit
@@ -317,7 +317,7 @@ steps:
 
 What the Action shows depends on who can read the repository:
 
-- A private or internal repository gets the findings in the job summary,
+- For a private or internal repository, the Action shows the findings in the job summary,
   in the workflow artifact and in code scanning.
 - On a public repository (or when the visibility is unknown), every reader
   can see the job summary, the annotations and the log, and can download
@@ -377,11 +377,11 @@ standard run: the plan of 20M tokens and the pacing of the benchmarked
 build, whose detection with the default model is not measured, and the cap
 is an upper limit only (on the agent route, the agent also writes
 its answer at 85% of the cap). A larger cap (`--max-cost-usd 10`,
-`--depth deep`, or the setup) buys a deeper audit of the same repository:
+`--depth deep`, or the setup) gives a deeper audit of the same repository:
 more unit checks and deep checks, deeper ones, three blind model
 verifications of each finding, focus sessions on one weakness family each, and on a large
 repository one agent session for each slice of the code. Each depth above
-the standard run carries the label "preview: more checks; effect on
+the standard run has the label "preview: more checks; effect on
 findings not yet measured", and its further findings come after the
 standard ones, in a second tier.
 
@@ -428,7 +428,7 @@ vulnerability in SentryTower privately ([SECURITY.md](SECURITY.md)).
 
 ## Where your code goes
 
-An audit sends the code of the repository to one place: the model endpoint
+An audit sends the code of the repository only to the model endpoint
 that you configure.
 
 1. The engines read the repository. The funnel puts code units into its
