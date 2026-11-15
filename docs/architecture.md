@@ -57,7 +57,7 @@ folders (`router.skipped`: the folders, their files and at most 50 names).
 
 ## Why two engines
 
-The funnel follows one design idea: the orchestrator selects the code to
+In the design of the funnel, the orchestrator selects the code to
 read, divides the budget and decides when to stop, and the agent sessions
 get narrow tasks. A free agent can choose badly what to read in a
 repository, and it can stop early.
@@ -117,7 +117,7 @@ check starts in the last 600 s before that stop; verifications go on until
 120 s before it.
 
 With a cost cap, the orchestrator also reads the money of the run from the
-gateway (`GET /budget`, numbers only). When dollars end the run
+gateway (`GET /budget`, numbers only). When the cost cap ends the run
 ([money](#money-and-depth)), no new unit check, triage, deep check,
 verification, focus session or sweep starts at 85% of the cap, and the
 running agent sessions get their final turn. When the token plan is spent
@@ -132,8 +132,8 @@ The orchestrator reads the session files of each agent session while it
 runs. Each grep match and each find result is a scored hint, never an order
 to read a file: a grep match in the first 10 results adds 0.5 to the score
 of the unit around it, a match in results 11 to 30 adds 0.25, a found file
-adds 0.15 to its best unit, and a unit gets at most 0.75. A grep match that
-no unit holds adds a window unit of ±20 lines (at most 300 windows).
+adds 0.15 to its best unit, and a unit gets at most 0.75. A grep match outside
+every unit adds a window unit of ±20 lines (at most 300 windows).
 
 ### Path classes
 
@@ -195,7 +195,7 @@ With a cost cap, the runner reads the money of the run from the gateway
 while the first turn runs. When the gateway says that new work must stop,
 the runner stops the first turn as at the token reserve, starts no new
 session after a blank reply, and gives the session its final turn: the
-answer comes inside the last 15% of the cap.
+agent gives its answer within the last 15% of the cap.
 
 The funnel uses the same runner and the same command for its free-roaming
 session and for each deep check, with other budget inputs and, for a deep
@@ -212,7 +212,7 @@ the label "unverified". No slice and no verification starts after the soft
 stop, and no slice starts with less than 10 minutes of the wall clock left
 (the stop is then `time-stop`, a wall-clock stop). The engine writes
 `deep.json` after each step, so the findings of the slices that ended
-survive Ctrl-C and the wall clock.
+are kept after Ctrl-C or a wall-clock stop.
 
 ## The model gateway
 
@@ -271,13 +271,13 @@ sequenceDiagram
   (after 780 s), so a call that a client gave up never goes upstream later.
   After a provider refusal, and at the stop of the gateway, each waiting
   attempt is refused at once.
-- **Soft stop:** when dollars end the run, and on the agent route
+- **Soft stop:** when the cost cap ends the run, and on the agent route
   whenever the run has a cap, `GET /budget` says "stop" when the committed
   cost of the finished attempts reaches 85% of the cap, and the engines
   start no new work. The reservations of the attempts in flight are worst
   cases, often many times their real cost; the last 15% of the cap is for
-  them and for the final turns. A run of the funnel that its token plan
-  ends (the standard run) has no soft stop.
+  them and for the final turns. A funnel run that ends at its token
+  plan (the standard run) has no soft stop.
 - **Provider refusal:** HTTP 401, 402, 403 or 404 from the provider (a
   refused key, an account without credit, a refused account or request, a
   route that no endpoint serves) gets no retry. Each later call of the run
@@ -300,8 +300,8 @@ sequenceDiagram
   attempt without a usage report counts nothing, as in the measured runs.
 - **Errors:** each request gets an answer; an unexpected error gives HTTP
   500 or 502 and releases the reservation of the attempt.
-- **Records:** the gateway records numbers and codes only. The one text of
-  a provider is the error message of a provider refusal, at most 200
+- **Records:** the gateway records numbers and codes only. The only provider
+  text is the error message of a provider refusal, at most 200
   characters, without control characters and key-like text, and none when
   a part of it is in the request.
 
@@ -319,18 +319,18 @@ buys / 20,000,000))` and the token plan of the engines.
   at 90% of the plan, and the gateway applies the plan as its token
   ceiling. On the funnel route the cap is an upper limit only; on the agent
   route the soft stop at 85% of the cap applies too, so that the agent
-  writes its answer before the cap refuses its calls. A `max_tokens` below
+  writes its answer before the gateway refuses its calls at the cap. A `max_tokens` below
   what the cap buys also makes the token plan end the run.
-- **Dollars end the run** when `m` is above 1, or when the cap buys fewer
+- **The cost cap ends the run** when `m` is above 1, or when the cap buys fewer
   than 20,000,000 tokens (`--depth quick`, an expensive model). The gateway
   applies no token ceiling (only `max_tokens`, when it is set), the soft
   stop at 85% applies, and the funnel and the slices of the agent route
   plan more work while money is left.
-- **The hold** waits instead of refusing, first in, first out: a call is
-  refused only when it cannot fit with nothing in flight, or after 600 s.
+- **The hold** makes a call wait instead of refusing it, first in, first
+  out: the gateway refuses a call only when it cannot fit with nothing in flight, or after 600 s.
 - **Depth above 1** grows each count and size of the run (more unit
   checks, deep checks, verifications, focus sessions and the sweep, or
-  slice sessions on the agent route) and carries the label "preview: more
+  slice sessions on the agent route) and has the label "preview: more
   checks; effect on findings not yet measured". The completion ceiling of a
   call stays the ceiling of its policy at every depth.
 - **Two tiers.** Tier 1 is the selection of the standard run: at most 6
@@ -443,7 +443,7 @@ flowchart TB
   follows it.
 - Newlines: the session readers, the live view and the web report split
   session lines and model text on `\n` only. U+2028, U+2029 and U+0085 in
-  an answer no longer cut its session line in two.
+  an answer do not cut its session line in two.
 - The terminal: each control character (C0, DEL, C1, and the bidirectional
   embeddings, overrides and isolates) of model text, of file names of the
   audited repository and of error messages is written as `?` in the live

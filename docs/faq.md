@@ -33,12 +33,13 @@ addition to code review, tests and other analysis tools.
 
 Yes. Give a larger budget: `--depth deep` ($10), `--depth max` ($50) or
 `--max-cost-usd`. Above the standard run ($2) the funnel checks more units,
-runs more and deeper deep checks, sends focus sessions after one weakness
-family each and verifies each finding three times; a repository of more
+runs more and deeper deep checks, starts focus sessions that each look for
+one weakness family, and verifies each finding three times; a repository of more
 than 1,000 files gets one agent session for each slice of its code. Such a
 run is a [preview](#what-does-preview-mean). Its first findings are the
 standard selection, and its further findings come after them, in a second
-tier. When the work ends first, a small repository ends with money left.
+tier. When the work ends before the budget, a run on a small repository
+ends with money left.
 See [depth](configuration.md#depth-what-a-larger-budget-buys).
 
 ### What does a run cost?
@@ -67,7 +68,7 @@ the models. A model without prices always runs without a cap.
 ### What does preview mean?
 
 A run above the standard depth (`--depth deep`, `--depth max`, or a cap
-that buys more than one standard run) carries the label "preview: more
+that buys more than one standard run) has the label "preview: more
 checks; effect on findings not yet measured". The run makes more checks than
 the standard run, and the effect of these checks on the findings is not yet
 measured. The findings of the standard selection come first, by the same
@@ -147,7 +148,7 @@ so a run has no cost cap and the standard plan of 20M tokens (or
 
 ### Where does my code go?
 
-To the model endpoint that you configure, and nowhere else: the README
+It goes only to the model endpoint that you configure. The README
 section [Where your code goes](../README.md#where-your-code-goes) gives the
 whole path. On the built-in routes, OpenRouter uses only the endpoints of an
 allowlist that do not store or train on the data
@@ -165,7 +166,7 @@ tools in the audited repository: a path outside it, also through a
 symbolic link, gets an error. The engines never get the provider key. A
 link in the repository cannot redirect the outputs or the run state, a
 program of the repository never runs in place of `node`, `rg` or `fd`, and a
-control character of a finding or a file name reaches the terminal as `?`.
+control character of a finding or a file name is written to the terminal as `?`.
 Run the container with the repository mounted read only and with network
 access only to the model endpoint ([deployment](deployment.md#hardening)).
 A prompt injection can still change the findings of a run.
@@ -200,5 +201,5 @@ process groups and signals.
 
 ### How do I report a vulnerability of SentryTower?
 
-Privately, through the security advisory form of the repository. See
+Report it privately through the security advisory form of the repository. See
 [SECURITY.md](../SECURITY.md).

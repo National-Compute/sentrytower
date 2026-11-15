@@ -1,7 +1,7 @@
 # Benchmarks
 
 > [!IMPORTANT]
-> **Our own benchmark, not an independent test.** We designed, ran and
+> **This is our own benchmark, not an independent test.** We designed, ran and
 > scored this comparison ourselves, and we also ran each of the other
 > harnesses. The numbers are for an earlier internal build of SentryTower
 > with GLM 5.3 Flash, not for this release and its default model.
@@ -177,7 +177,7 @@ sensitivity views as a higher point estimate, not as a confirmed lead.
 
 ### What was not compared
 
-Harnesses that need Claude Code or a Codex-only setup (Anthropic's
+The comparison left out harnesses that need Claude Code or a Codex-only setup (Anthropic's
 defending-code-reference-harness, Capital One VulnHunter, evilsocket/audit,
 RAPTOR, Open Kritt), skill packs (the Cloudflare security-audit skill, Trail
 of Bits skills), single-language harnesses, pull-request reviewers, and
@@ -185,7 +185,7 @@ closed products. A claim of "best harness" cannot cover them.
 
 ## VulnGym
 
-Tencent VulnGym v0.1.4: all 157
+The test used Tencent VulnGym v0.1.4: all 157
 human-verified advisories that the scorer supports. The benchmark ran the
 vulnerable versions only, so it has no false-alarm measure. This test was
 also pre-registered.
@@ -209,7 +209,7 @@ Read the numbers with these limits:
 - The open-harness comparison covers the harnesses listed above, each at
   its defaults with the parts that need Docker or the internet off. Several
   of them are built for frontier models and may do better with them.
-- One model: GLM 5.3 Flash. The results of another model, or of a
+- The test used one model: GLM 5.3 Flash. The results of another model, or of a
   multi-LLM configuration, are not measured.
 - Large repositories (10,000 files or more) remain hard for every harness.
 - The costs are at OpenRouter prices in October 2026.
@@ -223,7 +223,7 @@ Read the numbers with these limits:
 ## How the release relates to the benchmarked harness
 
 The code of the release comes from the benchmarked harness. Two kinds of
-check tie them together.
+check compare them.
 
 **Request parity, up to release 0.1.1.** Parity tests (outside this
 repository, because the benchmark harness is in no public repository) ran
@@ -252,7 +252,7 @@ built from the main branch at `bb23f8a` (Pi 1.5.0, `findings.json` 2.0.0):
   container of the [deployment guide](deployment.md#hardening);
 - the same scorer for both: a vulnerable snapshot is detected when a result
   of `findings.sarif` lies in a planted file within 5 lines of a planted
-  line; a fixed snapshot raises a false alarm when any result lies in a file
+  line; a fixed snapshot counts as a false alarm when any result lies in a file
   that the fix changed.
 
 | Image | Runs complete | Detected (of 50) | False alarms (of 50) | Model cost, all runs |
@@ -270,8 +270,8 @@ Release 0.2.0 builds the same model requests and agent sessions as
 `bb23f8a` (the golden fixtures and the Pi pin are unchanged). This check
 shows that the Pi 1.5.0 code finds what 0.1.1 finds on small
 repositories with planted flaws. It is not a detection rate on real code,
-and it says nothing about the confirmation test or the open-harness test
-above. The corpus and the scorer are in the private benchmark repository.
+and it is not evidence about the confirmation test or the open-harness
+test above. The corpus and the scorer are in the private benchmark repository.
 
 The release differs from the benchmarked harness in these points. Only the
 first two change a request body:

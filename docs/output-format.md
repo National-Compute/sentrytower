@@ -46,14 +46,14 @@ the depth of a deeper run, and the failure.
 | Field | Meaning |
 | --- | --- |
 | `status` | `complete`; `incomplete` (the engine crashed; the agent of the agent route gave no answer; more than 20% of the model calls failed, from 10 calls on, or each call failed; or the funnel did not do its work: its inventory, phase 0, failed, it checked no code unit, more than 20% of its unit checks failed, from 10 tried checks on, or more than half of its agent sessions ended without an answer while no wall clock or interrupt stopped the run); `failed` (the provider refused the key, the account or the route with HTTP 401, 402, 403 or 404, or the output of the engine cannot be read); `interrupted` (Ctrl-C or SIGTERM) |
-| `stop_reason` | `done` (the engine ended on its own); `budget` (85% of the cap is spent, the money left buys no next task, or the gateway refused a call at the cap); `token-ceiling`; `wall-clock`; `provider-error`; `engine-error`; `interrupted` |
+| `stop_reason` | `done` (the engine ended on its own); `budget` (85% of the cap is spent, the money left does not pay for the next task, or the gateway refused a call at the cap); `token-ceiling`; `wall-clock`; `provider-error`; `engine-error`; `interrupted` |
 | `stop_text` | One plain sentence: why the run stopped. An incomplete run whose engine ended on its own says "The engine ended, but its work is incomplete." |
 | `failure` | One plain sentence: why the status is not `complete` (for example "No code unit was checked: 13 of 13 unit checks failed." or "12 of 13 agent sessions ended without an answer."); after a provider refusal also what to do (for example "The provider refused the key (HTTP 401): check SENTRYTOWER_API_KEY."); null for a complete run |
 | `spent_usd` | The cost of the run in US dollars; 0.0 when the run counted no token (for example a run that the provider refused at once); null only when tokens were counted and no cost is known |
 | `cap_usd` | The cost cap of the run; null without a cap |
 | `units` | `kind` (`code units` on the funnel route, `agent sessions` on the agent route), `checked`, `failed` and `total` (null when unknown). A unit that failed is not checked: a unit whose file cannot be read, or a unit check that failed after its one retry or whose answer cannot be read. The agent route also gives `files_read`, the files that its sessions read |
 | `calls` | `total`: the model calls that reached the provider; `failed`: those whose last attempt ended with an HTTP error, a provider error or a malformed answer; `failed_share`. A budget refusal of the gateway and a call after a provider refusal are not in it |
-| `depth_factor`, `preview` | The count of standard runs that the budget buys; `preview` is true when it is above 1 |
+| `depth_factor`, `preview` | The number of standard runs that the budget pays for; `preview` is true when it is above 1 |
 | `sessions` | The agent sessions that gave an answer (`answered`) and that ended without one (`failed`) |
 | `provider_message` | Only after a provider refusal: the error message of the provider, at most 200 characters, cleaned of control characters and key-like text, and left out when a part of it is in the request |
 
@@ -152,7 +152,7 @@ reader ignores the fields that it does not know.
 | `title` | string | A short name of the vulnerability (at most 300 characters) |
 | `description` | string | The code at the locations and why it is vulnerable, then `Attack conditions, as the model states them:` and what, by the model's account, an attacker must control and can then do; left out when the engine gave neither |
 | `severity` | `critical`, `high`, `medium`, `low`, `unknown` | The severity that the engine gave; `unknown` when the answer gave none. The contract's `info` never occurs |
-| `evidence` | object | How far the proof went: `class` and `verification` ([evidence](#evidence)) |
+| `evidence` | object | The strength of the evidence: `class` and `verification` ([evidence](#evidence)) |
 | `engine` | object | `name` `SentryTower`, its `version`, and `mode`: the engine that found the finding ([engines](#engines)) |
 | `ruleId` | string | The first CWE; left out when the finding has no CWE (its SARIF rule is `SENTRYTOWER-UNCLASSIFIED`) |
 | `target` | object | `kind` `repository`; `locator`, the name of the audited folder |
@@ -190,7 +190,7 @@ the two lower classes:
 | `engine.mode` | Route | Meaning |
 | --- | --- | --- |
 | `free-roaming` | funnel | The agent session of the funnel on the whole repository. Its findings come first in the output, in the order of the agent, with the locations that the agent gave |
-| `deep-check` | funnel | An agent session of the funnel on one code unit with a lead (in a deeper run, also the sweep and the focus sessions). The first location is the resolved critical-operation line; the findings rank by their verification score |
+| `deep-check` | funnel | An agent session of the funnel on one code unit with a lead (in a deeper run, also the sweep and the focus sessions). The first location is the resolved critical-operation line; the findings are ranked by their verification score |
 | `single-agent` | agent | The agent of a repository with more than 1,000 files, and in a deeper run each slice session. The findings of the whole-repository session are in the order of the agent, with no output cap |
 
 Tier 1 of the funnel route has at most 6 findings, and at most 2 for each
@@ -313,12 +313,12 @@ The page is one self-contained file. It loads nothing and runs no script:
 its Content-Security-Policy allows only inline styles and `data:` images.
 Each text of the model, the repository and the run is escaped; an
 explanation keeps code blocks, inline code, bold text, lists and
-paragraphs. It reads on light and dark screens and prints on paper.
+paragraphs. It is readable on light and dark screens and can be printed on paper.
 
 ## run.json
 
 The record of the run. It holds numbers, codes, model IDs and paths; it holds
-no prompt, no answer text and no key. The one text of a provider is
+no prompt, no answer text and no key. The only text from a provider is
 `result.provider_message` after a provider refusal (see [the result](#the-result)).
 
 | Field | Meaning |
@@ -332,7 +332,7 @@ no prompt, no answer text and no key. The one text of a provider is
 | `models` | The model of each role of the route |
 | `configuration` | The resolved configuration: models, provider (without a key), budget (the settings as given), router, funnel parameters, the policy of each model, `sources` |
 | `usage` | `total` and `models`: `calls`; `upstream_calls` (the calls that reached the provider); `attempts`, `retries`; `refusals` (budget refusals of the gateway); `failures` and `failed_by` (the failed calls by the outcome of their last attempt, for example `HTTP 429` or `malformed answer`); `blocked` (the calls after a provider refusal, which never went upstream); `length_stops` (attempts that ended at the completion ceiling); input, output, reasoning, cached and total tokens; `cost_usd` and `cost_source` (`provider`, `estimate`, `mixed`, `partial`, `unknown`, or `none` for a run without a model call). `usage.total` also has `budget_refusals`, `committed_tokens` and `provider_error` (the status, the model, the time and the cleaned message of the first provider refusal, else null) |
-| `budget` | The limits and whether the run reached them: `max_tokens` (the token plan of the run), `token_ceiling_source` (`standard run`, `cost cap`, `max_tokens` or `default`), `max_tokens_setting`, `price_per_million_estimate` (the blended price of the route), `cost_cap_tokens` (what the cap buys), `gateway_token_ceiling` (null when dollars end the run, unless `max_tokens` is set), `depth_factor`, `preview`, `completion_ceilings` (the ceiling of a call of each model in this run), `wall_clock_seconds`, `max_cost_usd` (the cap of the run, also the default cap), `max_cost_usd_setting` (the setting as given: null when none, 0 for no cap), `soft_stop_usd` (85% of the cap when dollars end the run and on the agent route, else null), `refusals`, `token_ceiling_reached`, `cost_cap_reached`, `wall_clock_reached` |
+| `budget` | The limits and whether the run reached them: `max_tokens` (the token plan of the run), `token_ceiling_source` (`standard run`, `cost cap`, `max_tokens` or `default`), `max_tokens_setting`, `price_per_million_estimate` (the blended price of the route), `cost_cap_tokens` (what the cap buys), `gateway_token_ceiling` (null when the cost cap ends the run, unless `max_tokens` is set), `depth_factor`, `preview`, `completion_ceilings` (the ceiling of a call of each model in this run), `wall_clock_seconds`, `max_cost_usd` (the cap of the run, also the default cap), `max_cost_usd_setting` (the setting as given: null when none, 0 for no cap), `soft_stop_usd` (85% of the cap when the cost cap ends the run and on the agent route, else null), `refusals`, `token_ceiling_reached`, `cost_cap_reached`, `wall_clock_reached` |
 | `stop`, `engine` | The stop of the engine (for example `queue-empty`, `budget-stop`), and a summary of the engine (the funnel counts and pools, or the agent turns; `engine.slices` for the slice sessions of a deeper run of the agent route) |
 | `timings` | `router_seconds`, `engine_seconds`, `total_seconds` |
 | `tools`, `key_variable` | The Pi and Python versions; the name (never the value) of the key variable |
