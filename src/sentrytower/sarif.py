@@ -31,12 +31,19 @@ This module adds what code scanning needs beyond the mapping:
   without a location in the repository is counted in the run properties,
   not reported: SARIF consumers need a location;
 - ``automationDetails.id`` is ``<category>/``: one code-scanning category
-  for each audit, so that two audits of one repository keep their alerts.
+  for each audit, so that two audits of one repository keep their alerts;
+- each square bracket of a message, and each backslash before a bracket or a
+  backslash, is escaped with a backslash. A SARIF viewer reads
+  ``[text](target)`` in a plain text message as a link (SARIF 2.1.0,
+  3.11.6), and a model that read the audited code writes the title, the
+  explanation and the notes. A reader of the contracts gets these
+  characters back escaped.
 """
 
 from __future__ import annotations
 
 import posixpath
+import re
 from dataclasses import replace
 from typing import Any
 
@@ -126,6 +133,22 @@ CWE_NAMES = {
     "CWE-1333": "Inefficient Regular Expression Complexity",
     "CWE-1336": "Server-Side Template Injection",
 }
+
+
+_LINK_CHARACTER = re.compile(r"\\(?=[\\\[\]])|[\[\]]")
+
+
+def message_text(text: str) -> str:
+    """Model text as a SARIF plain text message without an embedded link: its brackets are literal."""
+    return _LINK_CHARACTER.sub(lambda match: "\\" + match.group(0), text)
+
+
+def _escape_messages(result: dict[str, Any]) -> dict[str, Any]:
+    for item in [result, *(location for location in result.get("relatedLocations") or [] if isinstance(location, dict))]:
+        message = item.get("message")
+        if isinstance(message, dict) and isinstance(message.get("text"), str):
+            message["text"] = message_text(message["text"])
+    return result
 
 
 def rule_id(finding: OutputFinding) -> str:
@@ -224,7 +247,7 @@ def sarif_document(
     index = {identifier: position for position, identifier in enumerate(rule_ids)}
     results = []
     for _, record in located:
-        mapped = finding_to_sarif_result(record)
+        mapped = _escape_messages(finding_to_sarif_result(record))
         results.append(
             {"ruleId": mapped["ruleId"], "ruleIndex": index[mapped["ruleId"]]} | {k: v for k, v in mapped.items() if k != "ruleId"}
         )

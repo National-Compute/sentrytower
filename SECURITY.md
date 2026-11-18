@@ -132,6 +132,12 @@ other data from the audited code.
   written as `?`, so a finding or a file name cannot move the cursor, set
   the window title or write the clipboard. `report.md` keeps only its line
   feeds and tabs, so `cat report.md` is safe too.
+- **Model text is text in the reports.** `report.html` escapes each text
+  of the model, the repository and the run. `report.md` escapes each
+  Markdown and HTML character of them, so a Markdown viewer shows no HTML,
+  link text, image, heading, list or table of a finding. `findings.sarif`
+  escapes the square brackets of its messages, so a SARIF viewer shows no
+  link of a finding.
 - **The outputs hold no key and no prompt.** `run.json` holds numbers,
   codes, model IDs and paths, and after a provider refusal the cleaned
   error message of the provider (at most 200 characters, never with
