@@ -859,6 +859,168 @@ def test_the_live_view_splits_session_lines_on_newlines_only(tmp_path: Path) -> 
     assert tail.reads == 1 and tail.files_read == {"a\u2028b.py"}
 
 
+def _markdown_report(**fields: Any) -> str:
+    from sentrytower.report import markdown_report
+
+    values: dict[str, Any] = {
+        "rank": 1,
+        "title": "Finding",
+        "severity": "high",
+        "cwe": ["CWE-79"],
+        "locations": [OutputLocation("app.py", 3, 3)],
+        "evidence": "",
+        "exploit_conditions": "",
+        "engine": "deep-check",
+        "route": "funnel",
+    }
+    run = {"route": "funnel", "seconds": 1, "repository": {"name": "repo", "files_counted": 1, "counted_up_to": 1001}}
+    return markdown_report([OutputFinding(**(values | fields))], run)
+
+
+#: The starts of the report's own list items.
+REPORT_ITEMS = ("- Repository:", "- Route:", "- Models:", "- Tokens:", "- Duration:", "- Findings:", "- Severity:", "- Location:")
+REPORT_ITEMS += ("- Related:", "- Engine:", "- Verification:")
+
+
+def _assert_no_markup_of_the_model(markdown: str) -> None:
+    """Only the report's own lines are headings, list items, quotes and table rows, and each "<", "[" and "&" is escaped."""
+    import re
+
+    lines = markdown.split("\n")
+    assert [line.split(" ")[0] for line in lines if line.startswith("#")] == ["#", "##", "###"]
+    assert sum(line.startswith("|") for line in lines) == 3
+    assert all(line.startswith(REPORT_ITEMS) for line in lines if re.match(r"[-*+](\s|$)", line))
+    assert [line for line in lines if re.match(r"[-*_]{3,}\s*$", line)] == ["---"]
+    assert not [line for line in lines if re.match(r"(>|<|\d+[.)]|={3,}|\s)", line)]
+    # Outside the code blocks and code spans, a character is escaped when an odd number of backslashes stands before it.
+    text = re.sub(r"^(`{3,})\n.*?\n\1$", "", markdown, flags=re.MULTILINE | re.DOTALL)
+    text = re.sub(r"(?<![`\\])(`+)(?!`).*?(?<!`)\1(?!`)", "", text)
+    assert not re.findall(r"(?<!\\)(?:\\\\)*[<>\[\]&`]", text)
+
+
+@pytest.mark.parametrize(
+    ("title", "cell", "heading"),
+    [
+        ("<img src=x onerror=alert(1)>", r"\<img src=x onerror=alert(1)\>", None),
+        ("<script>alert(1)</script>", r"\<script\>alert(1)\</script\>", None),
+        ("[click here](https://evil.example)", r"\[click here\](https://evil.example)", None),
+        ("![pixel](https://evil.example/p.png)", r"!\[pixel\](https://evil.example/p.png)", None),
+        ("SQL in `query(a|b)`", r"SQL in query(a\|b)", "SQL in `query(a|b)`"),
+        ("a ``` b ` c", r"a \`\`\` b \` c", None),
+        ("one | two", r"one \| two", None),
+        ("line one\n# Injected heading\n- item", "line one # Injected heading - item", None),
+        ("# Heading", r"\# Heading", None),
+        ("1. step", r"1\. step", None),
+        ("**bold** _em_ ~~gone~~ &lt; $x$ \\", r"\*\*bold\*\* \_em\_ \~\~gone\~\~ \&lt; \$x\$ \\", None),
+    ],
+)
+def test_the_markdown_report_shows_a_hostile_title_as_text(title: str, cell: str, heading: str | None) -> None:
+    # A model that reads attacker-controlled code writes the title. It must add no HTML, link, image, heading, list
+    # item or table cell to report.md, which GitHub, an IDE preview or a CI summary renders.
+    report = _markdown_report(title=title)
+    assert f"| 1 | high | CWE-79 | `app.py:3` | {cell} | funnel, deep check |" in report.split("\n")
+    assert f"### ST-001: {heading or cell}" in report.split("\n")
+    _assert_no_markup_of_the_model(report)
+
+
+def test_the_markdown_report_shows_hostile_evidence_as_text_and_keeps_its_code() -> None:
+    evidence = "\n".join(
+        [
+            "<details open><summary>Fixed</summary>hidden</details>",
+            "# Injected heading",
+            "> [!WARNING]",
+            "> Quoted",
+            "- item",
+            "+ item",
+            "* item",
+            "2) item",
+            "    indented",
+            "---",
+            "| a | b |",
+            "| - | - |",
+            "See [the docs](https://evil.example) and `os.system(cmd)`.",
+            "Setext",
+            "===",
+            "",
+            "```mermaid",
+            'graph TD; click A "https://evil.example"',
+            "x ```` y </code><img src=x>",
+            "```",
+        ]
+    )
+    report = _markdown_report(
+        evidence=evidence,
+        exploit_conditions="```\nrun(*args)\n```\nthen <b>[this](u)</b>",
+        locations=[OutputLocation("we|b/a`b\\|<x>.py", 3, 4), OutputLocation("x.py", 1, 1, "note <b>[l](u)</b>")],
+        verification_status="unverified",
+        verification_reason="reason <i>[r](u)</i>",
+    )
+    lines = report.split("\n")
+    start = lines.index("- Severity: **high**; CWE: CWE-79")
+    assert lines[start : lines.index("---", start)] == [
+        "- Severity: **high**; CWE: CWE-79",
+        "- Location: ``we|b/a`b\\|<x>.py:3-4``",
+        r"- Related: `x.py:1` (note \<b\>\[l\](u)\</b\>)",
+        "- Engine: funnel, deep check",
+        r"- Verification: unverified: reason \<i\>\[r\](u)\</i\>",
+        "",
+        r"\<details open\>\<summary\>Fixed\</summary\>hidden\</details\>  ",
+        r"\# Injected heading  ",
+        r"\> \[!WARNING\]  ",
+        r"\> Quoted  ",
+        r"\- item  ",
+        r"\+ item  ",
+        r"\* item  ",
+        r"2\) item  ",
+        "indented  ",
+        r"\---  ",
+        r"\| a \| b \|  ",
+        r"\| - \| - \|  ",
+        r"See \[the docs\](https://evil.example) and `os.system(cmd)`.  ",
+        "Setext  ",
+        r"\===",
+        "",
+        # No language label: GitHub draws a "mermaid" block as a diagram. The fence is longer than the backticks in the code.
+        "`````",
+        'graph TD; click A "https://evil.example"',
+        "x ```` y </code><img src=x>",
+        "`````",
+        "",
+        "**Attack conditions, as the model states them.**",
+        "",
+        "```",
+        "run(*args)",
+        "```",
+        "",
+        r"then \<b\>\[this\](u)\</b\>",
+        "",
+    ]
+    # The table cell of the location has no code span: a table splits its cells at a pipe also inside a code span.
+    assert r"| 1 | high | CWE-79 | we\|b/a\`b\\\|\<x\>.py:3-4 | Finding | funnel, deep check |" in lines
+    _assert_no_markup_of_the_model(report)
+
+
+def test_a_sarif_message_has_no_embedded_link_of_the_model() -> None:
+    # SARIF 2.1.0 (3.11.6) reads "[text](target)" in a plain text message as a link, also with a URI as its target.
+    finding = OutputFinding(
+        rank=1,
+        title="See [the fix](https://evil.example)",
+        severity="high",
+        cwe=["CWE-79"],
+        locations=[OutputLocation("app.py", 3, 3), OutputLocation("lib.py", 1, 1, "a\\[here](1) C:\\dir\\x")],
+        evidence="Run ![x](https://evil.example/p.png) and arr[0].",
+        exploit_conditions="",
+        engine="deep-check",
+        route="funnel",
+    )
+    (result,) = sarif_document([finding], {"route": "funnel"})["runs"][0]["results"]
+    assert result["message"]["text"] == (
+        "See \\[the fix\\](https://evil.example)\n\nRun !\\[x\\](https://evil.example/p.png) and arr\\[0\\]."
+    )
+    # A backslash before a bracket is escaped too, so the bracket after it stays escaped; another backslash stays.
+    assert result["relatedLocations"][0]["message"]["text"] == "a\\\\\\[here\\](1) C:\\dir\\x"
+
+
 def test_the_web_report_keeps_a_line_separator_of_model_text_in_its_line() -> None:
     from sentrytower.html_report import rich_text
 
@@ -924,4 +1086,4 @@ def test_the_markdown_report_holds_no_control_character_of_the_model() -> None:
     report = markdown_report([hostile], {"route": "agent"})
     assert not {"\x1b", "\x07", "\x9b", "\u202e", "\r"} & set(report)
     # A text of several lines keeps its lines and tabs.
-    assert "line one\nline two\tindented?31m" in report and "SQL injection?]52;c;ZXZpbA==??[2J ?exe.txt" in report
+    assert "line one  \nline two\tindented?31m" in report and "SQL injection?\\]52;c;ZXZpbA==??\\[2J ?exe.txt" in report

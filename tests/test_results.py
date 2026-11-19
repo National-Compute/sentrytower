@@ -18,6 +18,7 @@ from sentrytower.budget import STANDARD_TOKENS
 from sentrytower.config import load_config
 from sentrytower.gateway import PROVIDER_REFUSED_TYPE, GatewayConfig, ModelGateway, provider_message
 from sentrytower.policies import DEFAULT_MODEL, resolve_policies
+from sentrytower.report import markdown_text
 from sentrytower.result import (
     FAILED_SHARE_MIN_CALLS,
     STOP_DONE,
@@ -239,7 +240,7 @@ def test_a_refused_key_or_an_empty_account_fails_the_run_with_exit_4(rig, write_
     assert result["status"] == outcome.run["status"] == "failed" and result["stop_reason"] == "provider-error"
     assert f"(HTTP {status})" in result["failure"] and f"(HTTP {status})" in result["stop_text"]
     # The refused calls counted no token: the run spent nothing, and the report says so.
-    assert result["spent_usd"] == 0.0 and "Spent $0.00 of the $2.00 cost cap." in (rig.base / "out" / "report.md").read_text()
+    assert result["spent_usd"] == 0.0 and "Spent \\$0.00 of the \\$2.00 cost cap." in (rig.base / "out" / "report.md").read_text()
     # The calls that were in flight at the refusal reached the provider; no call after it did.
     refused_at = outcome.run["usage"]["total"]["provider_error"]["at"]
     assert upstream.times and all(moment <= refused_at + 0.5 for moment in upstream.times)
@@ -464,7 +465,8 @@ def test_each_output_states_the_spend_the_stop_and_the_checked_units(rig, write_
     assert lines[0].startswith("Spent $0.") and lines[0].endswith("of the $2.00 cost cap.") and lines[2] == "Checked 13 of 13 code units."
     out = rig.base / "out"
     report, page = (out / "report.md").read_text(), (out / "report.html").read_text()
-    assert all(f"- {line}" in report for line in lines) and all(line in page for line in lines)
+    # report.md escapes the Markdown characters of each sentence; a viewer shows "\$" as "$".
+    assert all(f"- {markdown_text(line)}" in report for line in lines) and all(line in page for line in lines)
     assert (
         json.loads((out / "findings.json").read_text())["run"]["result"] == result == json.loads((out / "run.json").read_text())["result"]
     )

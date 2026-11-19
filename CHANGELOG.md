@@ -9,6 +9,19 @@ engine parameters) is always a notable change.
 
 ## [Unreleased]
 
+### Security
+
+- `report.md` escapes the text of the model, the repository and the run.
+  Before, a title, an explanation, the attack conditions, a path or a note
+  went into the report unchanged, so a finding about attacker-controlled
+  code could add HTML, links, images, headings, lists and table cells to
+  the report in GitHub, an IDE preview or a CI summary. An explanation
+  keeps its inline code and its code blocks, without their language label
+  (GitHub draws a `mermaid` block as a diagram).
+- `findings.sarif` escapes each square bracket of a message, and each
+  backslash before a bracket or a backslash, so a SARIF viewer reads no
+  embedded link (SARIF 2.1.0, 3.11.6) in the text of the model.
+
 ## [0.2.0] - 2026-11-14
 
 `findings.json` is schema version 2.0.0, a breaking change of the output

@@ -258,7 +258,7 @@ the result.
 | `rules[].properties.security-severity` | The highest severity of the findings of the rule: critical 9.5, high 8.0, medium 5.5, low 3.0 (GitHub shows it as the alert severity) |
 | `results[].ruleId`, `ruleIndex` | The first CWE of the finding |
 | `results[].level` | `error` for critical and high, `warning` for medium and unknown, `note` for low |
-| `results[].message.text` | The title, then the description |
+| `results[].message.text` | The title, then the description. Each square bracket, and each backslash before a bracket or a backslash, is escaped with a backslash, so a SARIF viewer reads no link in the text of the model |
 | `results[].locations[0]` | The primary location: `artifactLocation.uri` relative to `%SRCROOT%` (percent-encoded, with the `--sarif-path-prefix` folder in front), `region.startLine` and `endLine`, the note as the message |
 | `results[].relatedLocations[]` | The related locations, with their notes |
 | `results[].partialFingerprints` | `sentrytowerFindingHash/v1`: the fingerprint value of the finding |
@@ -296,6 +296,14 @@ to the job summary.
   its explanation.
 - `## More findings (preview: more checks; effect on findings not yet
   measured)`: the findings of tier 2 of a deeper run, in the same form.
+
+Each text of the model, the repository and the run is escaped: GitHub, an
+IDE preview or a CI summary shows it as text, with no HTML, link text,
+image, heading, list, quote or table cell of it. GitHub links a bare URL,
+which shows its address, and draws text between two dollar signs as a
+formula also when the dollar signs are escaped. An explanation keeps its
+inline code and its code blocks, without their language label, and each
+of its lines ends with a line break.
 
 ## report.html
 
