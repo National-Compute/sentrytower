@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
-"""The real-model smoke of a release: seven audits through the container image, then a check of each result.
+"""The real-model smoke of a release: audits through the container image, then a check of each result.
 
     python3 scripts/release/smoke.py --image sentrytower:smoke --work ~/sentrytower-smoke --yes
+    python3 scripts/release/smoke.py --image sentrytower:smoke --work ~/sentrytower-smoke --deep --yes
 
 The maintainer runs it before a release tag. It spends real money, at most the
-sum of the caps ($25), and it reads two OpenRouter keys from the environment:
+sum of the caps of the runs that it starts. By default it starts the five short
+runs (``SHORT_RUNS``), which spend at most $5. ``--deep`` adds the two deep runs
+(``DEEP_RUNS``, $10 each), so the smoke spends at most $25. It reads two
+OpenRouter keys from the environment:
 
-- ``SENTRYTOWER_API_KEY``: a key with credit, for five runs;
+- ``SENTRYTOWER_API_KEY``: a key with credit, for three short runs and the
+  deep runs;
 - ``SMOKE_NOCREDIT_KEY``: a key with a credit limit of $0.01, for the run that
   must stop when the provider refuses the account.
 
-The seventh run uses a key that is not valid and must stop on HTTP 401. The
+One more run uses a key that is not valid and must stop on HTTP 401. The
 keys reach each container only in its environment; this script never prints
 them. The repositories are public and pinned to a commit.
 
@@ -20,7 +25,7 @@ The smoke passes when:
   at most 20% failed calls and no provider refusal, and exited with 0;
 - every run stays within its cost cap;
 - $2 gives depth factor 1 (the standard run, with the measured pacing), and
-  $10 gives a depth above 1 with the preview label;
+  (with ``--deep``) $10 gives a depth above 1 with the preview label;
 - the runs with a refused key or account fail with exit code 4.
 
 The report (``smoke-report.md`` and ``smoke-report.json`` in the folder of the
@@ -93,9 +98,32 @@ RUNS = (
     Run("deep-funnel", "nginx", "funnel", 7200, cap=10.0, expected_cap=10.0, depth="more", money_ends=True),
     Run("deep-agent", "juice-shop", "agent", 7200, cap=10.0, expected_cap=10.0, depth="more", money_ends=True),
 )
-# Two lanes: the deep runs one after the other, the rest in the other lane, so that at most one deep run
-# (up to one agent session for each CPU) runs at a time.
-LANES = (("deep-funnel", "deep-agent"), ("invalid-key", "no-credit", "standard-funnel", "standard-agent", "expensive-model"))
+SHORT_RUNS = ("invalid-key", "no-credit", "standard-funnel", "standard-agent", "expensive-model")
+# Only with --deep: they test the depth above 1, and they spend $20 of the $25.
+DEEP_RUNS = ("deep-funnel", "deep-agent")
+# Two lanes: the deep runs one after the other, the short runs in the other lane, so that at most one deep run
+# (up to one agent session for each CPU) runs at a time. Without --deep the deep lane is empty.
+LANES = (DEEP_RUNS, SHORT_RUNS)
+
+
+def select(only: str | None, deep: bool) -> list[Run]:
+    """The runs of the smoke: the short runs, the deep runs too with ``deep``, narrowed by ``only`` (comma-separated)."""
+    names = set(SHORT_RUNS) | (set(DEEP_RUNS) if deep else set())
+    if only:
+        wanted = only.split(",")
+        unknown = [name for name in wanted if name not in {run.name for run in RUNS}]
+        if unknown:
+            raise ValueError("--only names no run: " + ", ".join(unknown))
+        deep_only = [name for name in wanted if name in DEEP_RUNS and not deep]
+        if deep_only:
+            raise ValueError(", ".join(deep_only) + " is a deep run: add --deep")
+        names &= set(wanted)
+    return [run for run in RUNS if run.name in names]
+
+
+def main_key_caps(runs: list[Run]) -> float:
+    """The most that ``runs`` spend with the main key: the sum of their caps ($2 when a run takes the default cap)."""
+    return sum(2.0 if run.cap is None else run.cap for run in runs if run.key == "main")
 
 
 def lane_plan(names: list[str], lanes: str) -> list[list[str]]:
@@ -374,7 +402,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--image", default="sentrytower:smoke", help="the image to test (default: sentrytower:smoke)")
     parser.add_argument("--build", action="store_true", help="build the image from this checkout first")
     parser.add_argument("--work", type=Path, default=Path.home() / "sentrytower-smoke", help="the folder of the repositories and the runs")
-    parser.add_argument("--only", help="comma-separated run names (default: all seven)")
+    parser.add_argument("--only", help="comma-separated run names (default: the five short runs; with --deep, all seven)")
+    parser.add_argument(
+        "--deep",
+        action="store_true",
+        help="also start the two deep runs ($10 each, at most $25 in all); only when the release changes the depth, "
+        "the pacing or the deep agent route",
+    )
     parser.add_argument(
         "--lanes",
         choices=("1", "2", "all"),
@@ -385,9 +419,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--check", type=Path, metavar="FOLDER", help="check the runs of an earlier smoke again")
     parser.add_argument("--yes", action="store_true", help="start the runs that spend money (without --fake)")
     args = parser.parse_args(argv)
-    runs = [run for run in RUNS if not args.only or run.name in args.only.split(",")]
-    if not runs:
-        parser.error("--only names no run: " + ", ".join(run.name for run in RUNS))
+    try:
+        runs = select(args.only, args.deep)
+    except ValueError as error:
+        parser.error(str(error))
 
     if args.check is not None:
         checked = []
@@ -412,10 +447,11 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("set " + " and ".join("SENTRYTOWER_API_KEY" if name == "main" else "SMOKE_NOCREDIT_KEY" for name in unset))
         if "nocredit" in needed and keys["nocredit"] == keys["main"]:
             parser.error("SMOKE_NOCREDIT_KEY must be another key than SENTRYTOWER_API_KEY: a key with a credit limit of $0.01")
-        caps = sum(2.0 if run.cap is None and run.key == "main" else (run.cap or 0.0) for run in runs if run.key == "main")
-        print(f"smoke: {len(runs)} runs on OpenRouter with {args.image}; at most ${caps:.2f} with the main key and $0.01 with the other.")
+        caps = main_key_caps(runs)
+        nocredit = " and $0.01 with the other" if "nocredit" in needed else ""
+        print(f"smoke: {len(runs)} runs on OpenRouter with {args.image}; it spends at most ${caps:.2f} with the main key{nocredit}.")
         if not args.yes:
-            print("smoke: add --yes to start them.")
+            print(f"smoke: add --yes to start them and spend up to ${caps:.2f}.")
             return 2
 
     if args.build:
