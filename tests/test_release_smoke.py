@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 _SPEC = importlib.util.spec_from_file_location("release_smoke", ROOT / "scripts" / "release" / "smoke.py")
 assert _SPEC is not None and _SPEC.loader is not None
@@ -130,10 +132,51 @@ def test_the_docker_command_takes_the_key_from_the_environment_only(tmp_path: Pa
     assert fake[-2:] == ["--base-url", "http://host.docker.internal:1/v1"] and "--add-host=host.docker.internal:host-gateway" in fake
 
 
+SHORT = ["invalid-key", "no-credit", "standard-funnel", "standard-agent", "expensive-model"]
+DEEP = ["deep-funnel", "deep-agent"]
+
+
 def test_all_lanes_start_each_run_at_once_and_one_lane_runs_the_short_runs_first() -> None:
     names = [run.name for run in smoke.RUNS]
-    short = ["invalid-key", "no-credit", "standard-funnel", "standard-agent", "expensive-model"]
     assert smoke.lane_plan(names, "all") == [[name] for name in names]
-    assert smoke.lane_plan(names, "2") == [["deep-funnel", "deep-agent"], short]
-    assert smoke.lane_plan(names, "1") == [[*short, "deep-funnel", "deep-agent"]]
+    assert smoke.lane_plan(names, "2") == [DEEP, SHORT]
+    assert smoke.lane_plan(names, "1") == [[*SHORT, *DEEP]]
     assert smoke.lane_plan(["standard-funnel", "deep-agent"], "2") == [["deep-agent"], ["standard-funnel"]]
+    # Without --deep the deep lane is empty, and main() starts no thread for it.
+    assert smoke.lane_plan(SHORT, "2") == [[], SHORT]
+    assert smoke.lane_plan(SHORT, "1") == [SHORT]
+
+
+def test_the_default_smoke_is_the_five_short_runs_and_deep_adds_the_two_deep_runs() -> None:
+    assert sorted(smoke.SHORT_RUNS + smoke.DEEP_RUNS) == sorted(run.name for run in smoke.RUNS)
+    assert [run.name for run in smoke.select(None, deep=False)] == SHORT
+    assert [run.name for run in smoke.select(None, deep=True)] == [*SHORT, *DEEP]
+    assert smoke.main_key_caps(smoke.select(None, deep=False)) == 5.0
+    assert smoke.main_key_caps(smoke.select(None, deep=True)) == 25.0
+    assert [run.name for run in smoke.select("deep-agent,no-credit", deep=True)] == ["no-credit", "deep-agent"]
+    with pytest.raises(ValueError, match="deep-agent is a deep run: add --deep"):
+        smoke.select("standard-funnel,deep-agent", deep=False)
+    with pytest.raises(ValueError, match="--only names no run: standard"):
+        smoke.select("standard", deep=False)
+
+
+@pytest.mark.parametrize(("flags", "total", "count"), [([], "$5.00", 5), (["--deep"], "$25.00", 7)])
+def test_without_yes_the_smoke_states_what_it_spends_and_starts_nothing(
+    flags: list[str], total: str, count: int, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("SENTRYTOWER_API_KEY", "main-key")
+    monkeypatch.setenv("SMOKE_NOCREDIT_KEY", "other-key")
+    assert smoke.main(flags) == 2
+    printed = capsys.readouterr().out
+    assert f"smoke: {count} runs on OpenRouter" in printed and f"spends at most {total} with the main key" in printed
+    assert f"add --yes to start them and spend up to {total}." in printed
+    assert "main-key" not in printed and "other-key" not in printed
+
+
+@pytest.mark.parametrize(("flags", "names"), [([], SHORT), (["--deep"], [*SHORT, *DEEP])])
+def test_check_reads_the_runs_of_the_chosen_set(tmp_path: Path, flags: list[str], names: list[str]) -> None:
+    for name in names:
+        _out(tmp_path / name, status="failed", stop_reason="provider-error", spent_usd=0.0)
+    assert smoke.main(["--check", str(tmp_path), *flags]) == 1
+    report = json.loads((tmp_path / "smoke-report.json").read_text(encoding="utf-8"))
+    assert [run["name"] for run in report["runs"]] == names

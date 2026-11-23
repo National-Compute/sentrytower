@@ -99,16 +99,24 @@ License 2.0, without additional terms or conditions.
 4. Before 1.0 the GitHub Action has no major tag: the documentation pins
    the release tag (`@vX.Y.Z`). `tests/test_release.py` accepts a major tag
    only when it names the major version of the package.
+5. A release is complete only when it has all three of these:
+   1. the tag `vX.Y.Z`;
+   2. the container image `ghcr.io/national-compute/sentrytower:X.Y.Z`,
+      which the release workflow publishes from the tag;
+   3. sentrytower.com showing and linking the new version. The maintainers
+      update it in the website's source after the image is published.
 
 ### Real-model smoke
 
 The test suite and the CI use fake models only. Before a release tag, the
-maintainer starts a short smoke test with real models and a real key. It
-covers a standard run and a deep run on both routes (the funnel and the
-agent route), a key without credit, an invalid key and a more expensive
-model. It passes when no run is falsely clean (a refused key or a failed
-run never ends with exit code 0 and an empty result), every run stays
-within its cost cap, and the $2 cap gives depth factor 1.
+maintainer starts a short smoke test with real models and a real key. By
+default it runs five short runs: a standard run on both routes (the funnel
+and the agent route), a key without credit, an invalid key and a more
+expensive model. `--deep` adds a deep run on each route. The smoke passes
+when no run is falsely clean (a refused key or a failed run never ends with
+exit code 0 and an empty result), every run stays within its cost cap, the
+$2 cap gives depth factor 1 and, with `--deep`, the $10 cap gives a depth
+above 1 with the preview label.
 
 Run it from a checkout of the release commit, with Docker:
 
@@ -118,12 +126,24 @@ python3 scripts/release/smoke.py --build --image sentrytower:smoke --yes
 
 It reads two keys from the environment: `SENTRYTOWER_API_KEY` (a key with
 credit) and `SMOKE_NOCREDIT_KEY` (a second key with a credit limit of
-$0.01). It spends at most $25 and writes `smoke-report.md` to the folder
-of the runs (default `~/sentrytower-smoke`). Each run has a wall-clock time limit: one
-hour for the $2 and $1 runs, two hours for the $10 runs. By default the two
-deep runs go one after the other, in parallel with the other runs (up to about four
-hours). `--lanes all` starts every run at the same time (up to about two
-hours), and `--lanes 1` runs one audit at a time (up to about seven and a
-half hours). The deep runs start up to one agent session for each CPU: with
-more than one lane, give Docker 16 GB of memory. `--fake` runs the same
-plan against local fake endpoints, with no key and no cost.
+$0.01). By default it spends at most $5. It writes `smoke-report.md` to the
+folder of the runs (default `~/sentrytower-smoke`). Each run has a
+wall-clock time limit: one hour for the $2 and $1 runs, two hours for the
+$10 runs. The five short runs go one after the other (up to about three and
+a half hours); `--lanes all` starts them at the same time (up to about one
+hour).
+
+Add `--deep` only when the release changes the depth, the pacing or the
+deep agent route: `src/sentrytower/budget.py` (the depth factor, the token
+plan and the limits that grow with the depth), `src/sentrytower/funnel/pacing.py`
+(the pools and the clock of the funnel) or `src/sentrytower/agent/deep.py`
+(the slice sessions of the agent route). The two deep runs cost $10 each, so
+the smoke then spends at most $25. They go one after the other, in parallel
+with the short runs (up to about four hours). `--lanes all` starts every
+run at the same time (up to about two hours), and `--lanes 1` runs one
+audit at a time (up to about seven and a half hours). The deep runs start
+up to one agent session for each CPU: with more than one lane, give Docker
+16 GB of memory.
+
+`--fake` runs the same plan against local fake endpoints, with no key and
+no cost.
