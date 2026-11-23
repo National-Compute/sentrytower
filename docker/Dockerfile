@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
+# syntax=docker/dockerfile:1.28.0@sha256:bb22d9815c728170f72750f4e5b0d672e06176142e1d602c7e66c050100b7e5b
 #
 # The SentryTower container image: Python 3.12 and Node.js 24 on Debian 13
 # (trixie), the pinned Pi coding agent 1.5.0, and ripgrep 15.2.0 and fd 10.5.0
@@ -6,12 +6,12 @@
 # The release workflow publishes it for linux/amd64 and linux/arm64 as
 # ghcr.io/national-compute/sentrytower:<version>.
 #
-#   docker build -f docker/Dockerfile -t sentrytower:0.2.0 .
+#   docker build -f docker/Dockerfile -t sentrytower:0.2.1 .
 #   mkdir -p ~/sentrytower-results     # outside the audited repository
 #   docker run --rm -e SENTRYTOWER_API_KEY --user "$(id -u):$(id -g)" \
 #     --read-only --tmpfs "/home/dev:uid=$(id -u),gid=$(id -g)" --tmpfs /tmp \
 #     -v "$PWD:/workspace/repo:ro" -v ~/sentrytower-results:/workspace/out \
-#     sentrytower:0.2.0 audit /workspace/repo --out /workspace/out
+#     sentrytower:0.2.1 audit /workspace/repo --out /workspace/out
 #
 # The layout of the run is the layout of the measured runs: the
 # repository at /workspace/repo and the agent state below /home/dev. The
@@ -99,7 +99,7 @@ LABEL org.opencontainers.image.title="SentryTower" \
       org.opencontainers.image.url="https://github.com/National-Compute/sentrytower" \
       org.opencontainers.image.documentation="https://github.com/National-Compute/sentrytower/blob/main/docs/deployment.md" \
       org.opencontainers.image.licenses="Apache-2.0 OR MIT" \
-      org.opencontainers.image.version="0.2.0"
+      org.opencontainers.image.version="0.2.1"
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # libstdc++ for Node.js; tini reaps the agent processes and forwards signals. The base image is
 # pinned by digest; the upgrade installs the Debian security updates published since it was built,

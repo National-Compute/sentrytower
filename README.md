@@ -113,7 +113,7 @@ git clone https://github.com/National-Compute/sentrytower && cd sentrytower && .
 ```
 
 **With Docker**, with nothing else to install. The image
-`ghcr.io/national-compute/sentrytower:0.2.0` (linux/amd64 and linux/arm64)
+`ghcr.io/national-compute/sentrytower:0.2.1` (linux/amd64 and linux/arm64)
 holds Python, Node.js, the Pi agent, ripgrep and fd:
 
 ```sh
@@ -122,7 +122,7 @@ mkdir -p ~/sentrytower-results
 docker run --rm -e SENTRYTOWER_API_KEY --user "$(id -u):$(id -g)" \
   --read-only --tmpfs "/home/dev:uid=$(id -u),gid=$(id -g)" --tmpfs /tmp \
   -v "$PWD:/workspace/repo:ro" -v ~/sentrytower-results:/workspace/out \
-  ghcr.io/national-compute/sentrytower:0.2.0 audit /workspace/repo --out /workspace/out
+  ghcr.io/national-compute/sentrytower:0.2.1 audit /workspace/repo --out /workspace/out
 ```
 
 This audits the current folder. Keep `--user`: the output folder must
@@ -132,7 +132,7 @@ belong to the user of the run.
 Python 3.11+, Node.js 22.19+, the Pi agent, ripgrep and fd:
 
 ```sh
-uv tool install git+https://github.com/National-Compute/sentrytower@v0.2.0    # or: pipx install git+https://...@v0.2.0
+uv tool install git+https://github.com/National-Compute/sentrytower@v0.2.1    # or: pipx install git+https://...@v0.2.1
 npm install -g @earendil-works/pi-coding-agent@1.5.0                         # the agent runtime
 brew install ripgrep fd                                                      # or: apt install ripgrep fd-find
 
@@ -308,7 +308,7 @@ steps:
   - uses: actions/checkout@v7
     with:
       persist-credentials: false
-  - uses: National-Compute/sentrytower@v0.2.0
+  - uses: National-Compute/sentrytower@v0.2.1
     with:
       api-key: ${{ secrets.OPENROUTER_API_KEY }}
       # fail-on: high
@@ -339,7 +339,7 @@ provenance attestation; pin the digest that the check shows for an image
 that cannot change:
 
 ```sh
-gh attestation verify oci://ghcr.io/national-compute/sentrytower:0.2.0 --repo National-Compute/sentrytower
+gh attestation verify oci://ghcr.io/national-compute/sentrytower:0.2.1 --repo National-Compute/sentrytower
 ```
 
 `docker build -f docker/Dockerfile .` still builds the image from a clone.
@@ -479,7 +479,7 @@ event does not give it.
   title   = {SentryTower: size-routed LLM security audits of source repositories},
   author  = {{The SentryTower Authors}},
   year    = {2026},
-  version = {0.2.0},
+  version = {0.2.1},
   url     = {https://github.com/National-Compute/sentrytower},
   license = {Apache-2.0 OR MIT}
 }

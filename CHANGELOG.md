@@ -9,8 +9,33 @@ engine parameters) is always a notable change.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-23
+
+The container image takes the Debian 13.8 updates, and the reports escape
+the text of the model. The command line, the settings, the `findings.json`
+schema and the model requests do not change.
+
+### Changed
+
+- The Dockerfile frontend is `docker/dockerfile` 1.28.0 (was 1.7), pinned
+  by digest.
+- The release workflow builds the wheel and the source distribution with
+  uv 0.13.7 (was 0.12.23).
+
 ### Security
 
+- The container image is built on Debian 13.8 (was 13.7). Its build
+  installs the Debian updates published since 0.2.0: glibc
+  2.41-12+deb13u5 (was 2.41-12+deb13u4; `libc6`, `libc-bin`), OpenSSL
+  3.5.9-1~deb13u1 (was 3.5.7-1~deb13u3; `libssl3t64`, `openssl`,
+  `openssl-provider-legacy`), `zlib1g` 1:1.3.dfsg+really1.3.1-1+deb13u1
+  and `base-files` 13.8+deb13u8. Trivy 0.76.2, with its database of
+  2026-11-23, reports 222 findings in the Debian packages of the
+  linux/amd64 image and none with a fixed version; for the image of 0.2.0
+  it reports 250, of which 28 (14 glibc vulnerabilities in `libc6` and
+  `libc-bin`) have a fixed version. Python 3.12.16, Node.js 24.22.3,
+  Pi 1.5.0 and its npm dependencies, ripgrep 15.2.0 and fd 10.5.0 stay
+  the same.
 - `report.md` escapes the text of the model, the repository and the run.
   Before, a title, an explanation, the attack conditions, a path or a note
   went into the report unchanged, so a finding about attacker-controlled
