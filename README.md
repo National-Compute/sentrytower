@@ -10,6 +10,11 @@
 </p>
 
 <p align="center">
+  This command-line scanner is the open-source part of <a href="https://sentrytower.com">SentryTower</a>,
+  National Compute's vulnerability-management platform.
+</p>
+
+<p align="center">
   <a href="CHANGELOG.md"><img alt="Status: public beta" src="https://img.shields.io/badge/status-public%20beta-b45309.svg"></a>
   <a href="#results"><img alt="Benchmark: our own, pre-registered" src="https://img.shields.io/badge/benchmark-our%20own%2C%20pre--registered-5068f4.svg"></a>
   <a href="#license"><img alt="License: Apache-2.0 or MIT" src="https://img.shields.io/badge/license-Apache--2.0%20or%20MIT-5068f4.svg"></a>
